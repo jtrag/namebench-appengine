@@ -1,0 +1,4 @@
+cron:
+- description: Remove duplicate id
+  url: /tasks/clear_dupes
+  schedule: every 60 minutes
