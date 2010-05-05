@@ -9,7 +9,8 @@
 <body id="site">
   <div id="container">  
   <h1>Recent Submissions</h1>
-  <table>
+  <div id="nsdetails">
+  <table id="nstable">
     <thead>
       <tr>
         <td>ID</td>
@@ -24,7 +25,7 @@
     </thead>
     <tbody>
 {% for submission in recent_submissions %}
-<tr {% if not submission.listed %} style="background-color: #aaa;"{% endif %}>
+<tr class="{% if not submission.listed %}disabled{% else %}normal {% cycle odd,even %}{% endif %}">
   <td><a href="/id/{{ submission.key.id }}">{{ submission.key.id }}</td>
   <td>{% if submission.region %}{{ submission.region }}, {{ submission.country }} {% else %} {% if submission.country %} {{ submission.country }} {% else %} Unknown {% endif %} {% endif %}</td>
   <td>{{ submission.class_c }}.x</td>
@@ -37,6 +38,7 @@
 {% endfor %}
 </tbody>
 </table>
+</div>
 </div>
 </body>
 </html>

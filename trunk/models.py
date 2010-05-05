@@ -51,10 +51,18 @@ class Submission(db.Model):
   os_system = db.StringProperty()
   os_release = db.StringProperty()
   python_version = db.StringProperty()
+  namebench_version = db.StringProperty()
   city = db.StringProperty()
   region = db.StringProperty()
   country = db.StringProperty()
   coordinates = db.GeoPtProperty()
+
+  # config
+  input_source = db.StringProperty()
+  benchmark_thread_count = db.IntegerProperty()
+  health_thread_count = db.IntegerProperty()
+  health_timeout = db.FloatProperty()
+  timeout = db.FloatProperty()
   
   best_nameserver = db.ReferenceProperty(NameServer, collection_name='best_submissions')
   best_improvement = db.FloatProperty()
@@ -62,7 +70,9 @@ class Submission(db.Model):
 
 class SubmissionNameServer(db.Model):
   nameserver = db.ReferenceProperty(NameServer, collection_name='submissions')
-  submission = db.ReferenceProperty(Submission, collection_name='nameservers')
+  submission = db.ReferenceProperty(Submission, collection_name='nameservers')  
+  is_error_prone = db.BooleanProperty()
+  is_disabled = db.BooleanProperty()
   overall_average = db.FloatProperty()
   averages = db.ListProperty(float)
   duration_min = db.FloatProperty()

@@ -103,6 +103,12 @@ class SubmitHandler(webapp.RequestHandler):
     submission.os_system = data['config']['platform'][0]
     submission.os_release = data['config']['platform'][1]
     submission.python_version = '.'.join(map(str, data['config']['python']))
+    submission.namebench_version = data['config']['version']
+    submission.benchmark_thread_count = data['config']['benchmark_thread_count']
+    submission.health_thread_count = data['config']['health_thread_count']
+    submission.health_timeout = data['config']['health_timeout']
+    submission.timeout = data['config']['timeout']
+    submission.input_source = data['config']['input_source']
 
     if 'geodata' in data:
       self.response.out.write("geodata: %s" % data['geodata'])
@@ -131,6 +137,8 @@ class SubmitHandler(webapp.RequestHandler):
       ns_sub.duration_min = nsdata['min']
       ns_sub.duration_max = nsdata['max']
       ns_sub.failed_count = nsdata['failed']
+      ns_sub.is_error_prone = nsdata['is_error_prone']
+      ns_sub.is_disabled = nsdata['is_disabled']
       ns_sub.nx_count = nsdata['nx']
       ns_sub.sys_position = nsdata['sys_position']
       ns_sub.position = nsdata['position']
