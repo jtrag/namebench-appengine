@@ -25,7 +25,6 @@ class IndexHost(db.Model):
 
 class NameServer(db.Model):
   ip = db.StringProperty()
-  ip_bytes = db.StringProperty(multiline=True)
   hostname = db.StringProperty()
   name = db.StringProperty()
   listed = db.BooleanProperty()
@@ -35,38 +34,37 @@ class NameServer(db.Model):
   coordinates = db.GeoPtProperty()
   url = db.LinkProperty()
   timestamp = db.DateTimeProperty(auto_now_add=True)
+  
 
 class Submission(db.Model):
   dupe_check_id = db.IntegerProperty()
   class_c = db.StringProperty()
-  # ByteStringProperty causes problems:
-  #  File "google/appengine/ext/admin/__init__.py", line 916, in get
-  #    return _DATA_TYPES[value.__class__]
-  # KeyError: <class 'google.appengine.api.datastore_types.ByteString'>
-  class_c_bytes = db.StringProperty(multiline=True)
   timestamp = db.DateTimeProperty(auto_now_add=True)
   listed = db.BooleanProperty()
+  city = db.StringProperty()
+  region = db.StringProperty()
+  country = db.StringProperty()
+  coordinates = db.GeoPtProperty()
+  
+  # de-normalized data, also duplicated in RunResults (though much slower)
+  best_nameserver = db.ReferenceProperty(NameServer, collection_name='best_submissions')
+  best_improvement = db.FloatProperty()
+  primary_nameserver = db.ReferenceProperty(NameServer, collection_name="primary_submissions")
+
+class SubmissionConfig(db.Model):
+  submission = db.ReferenceProperty(Submission, collection_name='config')  
+  input_source = db.StringProperty()
+  benchmark_thread_count = db.IntegerProperty()
+  health_thread_count = db.IntegerProperty()
+  health_timeout = db.FloatProperty()
+  timeout = db.FloatProperty()
   query_count = db.IntegerProperty()
   run_count = db.IntegerProperty()
   os_system = db.StringProperty()
   os_release = db.StringProperty()
   python_version = db.StringProperty()
   namebench_version = db.StringProperty()
-  city = db.StringProperty()
-  region = db.StringProperty()
-  country = db.StringProperty()
-  coordinates = db.GeoPtProperty()
 
-  # config
-  input_source = db.StringProperty()
-  benchmark_thread_count = db.IntegerProperty()
-  health_thread_count = db.IntegerProperty()
-  health_timeout = db.FloatProperty()
-  timeout = db.FloatProperty()
-  
-  best_nameserver = db.ReferenceProperty(NameServer, collection_name='best_submissions')
-  best_improvement = db.FloatProperty()
-  primary_nameserver = db.ReferenceProperty(NameServer, collection_name="primary_submissions")
 
 class SubmissionNameServer(db.Model):
   nameserver = db.ReferenceProperty(NameServer, collection_name='submissions')
