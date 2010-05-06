@@ -27,7 +27,7 @@ import models
 
 # The minimum amount of time between submissions that we list.
 # TODO(tstromberg): Fix duplication in submit.py
-MIN_LISTING_DELTA = datetime.timedelta(hours=8)
+MIN_LISTING_DELTA = datetime.timedelta(hours=6)
 
 
 class ClearDuplicateIdHandler(webapp.RequestHandler):
