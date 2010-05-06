@@ -25,8 +25,8 @@ from django.utils import simplejson
 
 import models
 
-MIN_QUERY_COUNT = 50
-MIN_SERVER_COUNT = 5
+MIN_QUERY_COUNT = 75
+MIN_SERVER_COUNT = 7
 # The minimum amount of time between submissions that we list
 MIN_LISTING_DELTA = datetime.timedelta(hours=8)
 
