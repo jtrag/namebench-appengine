@@ -96,3 +96,4 @@ class IndexResult(db.Model):
   duration = db.FloatProperty()
   answer_count = db.IntegerProperty()
   ttl = db.IntegerProperty()
+  response = db.StringProperty()
