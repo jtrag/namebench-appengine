@@ -17,6 +17,7 @@
 import cgi
 import datetime
 import os
+import re
 from google.appengine.ext import db
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
@@ -28,7 +29,23 @@ import models
 MIN_QUERY_COUNT = 75
 MIN_SERVER_COUNT = 7
 # The minimum amount of time between submissions that we list
-MIN_LISTING_DELTA = datetime.timedelta(hours=8)
+# TODO(tstromberg): Fix duplication in tasks.py
+MIN_LISTING_DELTA = datetime.timedelta(hours=6)
+
+# TODO(tstromberg): Remove duplicate code - comes from libnamebench/util.py
+def is_private_ip(ip):
+  """Boolean check to see if an IP is private or not.
+  
+  Returns: Number of bits that should be preserved.
+  """
+  if re.match('^10\.', ip):
+    return 1
+  elif re.match('^192\.168', ip):
+    return 2
+  elif re.match('^172\.(1[6-9]|2[0-9]|3[0-1])\.', ip):
+    return 1
+  else:
+    return None
 
 def list_average(values):
   """Computes the arithmetic mean of a list of numbers."""
@@ -98,6 +115,19 @@ class SubmitHandler(webapp.RequestHandler):
     submission = models.Submission()
     submission.dupe_check_id = int(dupe_check_id)
     submission.class_c = class_c
+    # Hide from the main index. 
+    hide_me = self.request.get('hidden', False)
+    # simplejson does not seem to convert booleans
+    if hide_me and hide_me != 'False':
+      notes.append("Hidden on request: %s [%s]" % (hide_me, type(hide_me)))
+      submission.hidden = True
+      listed = False
+    elif is_private_ip(self.request.remote_addr):
+      notes.append("Hidden due to internal IP.")
+      submission.hidden = True
+      listed = False
+    else:
+      submission.hidden = False
     submission.listed = listed
 
     if 'geodata' in data and data['geodata']:
@@ -177,8 +207,14 @@ class SubmitHandler(webapp.RequestHandler):
 
     # Final update with the primary_nameserver / best_nameserver data.
     submission.put()
+    if submission.listed:
+      state = 'public'
+    elif submission.hidden:
+      state = 'hidden'
+    else:
+      state = 'unlisted'
     response = {
-        'listed': listed,
+        'state': state,
         'url': '/id/%s' % submission.key().id(),
         'notes': notes
     }

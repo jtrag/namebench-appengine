@@ -35,6 +35,8 @@
     </thead>
     <tbody>
 {% for submission in recent_submissions %}
+{% if not submission.hidden %}
+
 <tr class="{% if not submission.listed %}disabled{% else %}normal {% cycle odd,even %}{% endif %}">
   <td><a href="/id/{{ submission.key.id }}">{{ submission.key.id }}</td>
   <td>{% if submission.region %}{{ submission.region|escape }}, {{ submission.country|escape }} {% else %} {% if submission.country %} {{ submission.country|escape }} {% else %} Unknown {% endif %} {% endif %}</td>
@@ -44,6 +46,7 @@
   <td>{% if submission.best_improvement %}{{ submission.best_improvement|floatformat }}%{% else %}N/A{% endif %}</td>
   <td>{{ submission.timestamp }}</td>
 </tr>
+{% endif %}
 {% endfor %}
 </tbody>
 </table>

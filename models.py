@@ -41,6 +41,7 @@ class Submission(db.Model):
   class_c = db.StringProperty()
   timestamp = db.DateTimeProperty(auto_now_add=True)
   listed = db.BooleanProperty()
+  hidden = db.BooleanProperty()
   city = db.StringProperty()
   region = db.StringProperty()
   country = db.StringProperty()
