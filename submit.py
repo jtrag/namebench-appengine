@@ -96,19 +96,7 @@ class SubmitHandler(webapp.RequestHandler):
     submission = models.Submission()
     submission.dupe_check_id = int(dupe_check_id)
     submission.class_c = class_c
-#    submission.class_c_bytes = ''.join([ chr(int(x)) for x in class_c_tuple ])
     submission.listed = listed
-    submission.query_count = data['config']['query_count']
-    submission.run_count = data['config']['run_count']
-    submission.os_system = data['config']['platform'][0]
-    submission.os_release = data['config']['platform'][1]
-    submission.python_version = '.'.join(map(str, data['config']['python']))
-    submission.namebench_version = data['config']['version']
-    submission.benchmark_thread_count = data['config']['benchmark_thread_count']
-    submission.health_thread_count = data['config']['health_thread_count']
-    submission.health_timeout = data['config']['health_timeout']
-    submission.timeout = data['config']['timeout']
-    submission.input_source = data['config']['input_source']
 
     if 'geodata' in data:
       self.response.out.write("geodata: %s" % data['geodata'])
@@ -120,6 +108,23 @@ class SubmitHandler(webapp.RequestHandler):
     else:
       self.response.out.write("No geodata!")
     submission.put()
+    
+    # Dump configuration for later reference.
+    config = models.SubmissionConfig()
+    config.submission = submission
+    config.query_count = data['config']['query_count']
+    config.run_count = data['config']['run_count']
+    config.os_system = data['config']['platform'][0]
+    config.os_release = data['config']['platform'][1]
+    config.python_version = '.'.join(map(str, data['config']['python']))
+    config.namebench_version = data['config']['version']
+    config.benchmark_thread_count = data['config']['benchmark_thread_count']
+    config.health_thread_count = data['config']['health_thread_count']
+    config.health_timeout = data['config']['health_timeout']
+    config.timeout = data['config']['timeout']
+    config.input_source = data['config']['input_source']
+    config.put()
+    
     reference_latency = None
     for nsdata in data['nameservers']:
       if nsdata['sys_position'] == 0:

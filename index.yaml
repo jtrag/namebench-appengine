@@ -22,7 +22,7 @@ indexes:
   - name: timestamp
     direction: desc
 
-- kind: Submission
+- kind: SubmissionNameServer
   properties:
-  - name: sys_id
-  - name: timestamp
+  - name: submission
+  - name: duration_min

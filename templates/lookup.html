@@ -15,7 +15,7 @@
       data.addColumn('number', 'Duration');
       data.addColumn('number', 'TTL');
       data.addColumn('number', 'Answer Count');
-      data.addRows([{% for ns_sub in submission.nameservers %}{% for index_result in ns_sub.index_results %}
+      data.addRows([{% for ns_sub in nsdata %}{% for index_result in ns_sub.index_results %}
         ['{% if ns_sub.nameserver.name %}{{ ns_sub.nameserver.name }}{% else %}{{ ns_sub.nameserver.ip }}{% endif %}','{{ index_result.index_host.record_name }}',{{ index_result.duration|floatformat:3 }},{{ index_result.ttl }},{{ index_result.answer_count }}],{% endfor %}{% endfor %}]);
       var table = new google.visualization.Table(document.getElementById('index_table'));
       table.draw(data);
@@ -74,7 +74,7 @@
 </tr>
 </thead>
 
-{% for sub in submission.nameservers %}
+{% for sub in nsdata %}
 <tr class="{% if sub.is_disabled %}disabled{% else %}normal {% cycle odd,even %}{% endif %}{% ifequal sub.sys_position 0 %} primary_row{% endifequal %}{% if sub.is_error_prone %} unhealthy_host{% endif %}">
   <td>{{ sub.nameserver.ip }}</td>
   <td>{{ sub.nameserver.name }}</td>
