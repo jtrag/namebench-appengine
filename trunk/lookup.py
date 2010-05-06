@@ -32,9 +32,18 @@ class LookupHandler(webapp.RequestHandler):
 
   def get(self, id):
     submission = models.Submission.get_by_id(int(id))
-    nsdata = self._GetFastestNameServers(submission)
-    nsdata_nearest = nsdata.order("duration_min")
-    recommended = [nsdata[0], nsdata_nearest[0], nsdata_nearest[1]]
+    nsdata = self._GetSubmissionNameServers(submission).order("overall_average")
+    nsdata_nearest = self._GetSubmissionNameServers(submission).order("duration_min")
+    recommended = [nsdata[0]]
+    
+    # We need to make sure the nearest server is not also the fastest.
+    for record in nsdata_nearest:
+      if record.key() != recommended[0].key():
+        recommended.append(record)
+      
+      if len(recommended) == 3:
+        break
+
     template_values = {
       'id': id,
       'config': self._GetConfigTuples(submission),
@@ -51,14 +60,16 @@ class LookupHandler(webapp.RequestHandler):
   
   def _GetConfigTuples(self, submission):
     # configuration is only one row, so the for loop is kind of silly here.
+    hide_keys = ['submission']
+    
     show_config = []
     for configuration in submission.config:
-      print configuration
-      for key in models.SubmissionConfig.properties():
-        print key
-        show_config.append((key, getattr(configuration, key)))
-  
-  def _GetFastestNameServers(self, submission):
+      for key in sorted(models.SubmissionConfig.properties().keys()):
+        if key not in hide_keys:
+          show_config.append((key, getattr(configuration, key)))
+    return show_config
+
+  def _GetSubmissionNameServers(self, submission):
     return models.SubmissionNameServer.all().filter("submission =", submission)
 
   def _CreateMeanDurationUrl(self, nsdata):
