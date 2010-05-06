@@ -18,7 +18,7 @@
       data.addRows([{% for ns_sub in nsdata %}{% for index_result in ns_sub.index_results %}
         ['{% if ns_sub.nameserver.name %}{{ ns_sub.nameserver.name|escape }}{% else %}{{ ns_sub.nameserver.ip|escape }}{% endif %}','{{ index_result.index_host.record_name|escape }}',{{ index_result.duration|floatformat:3 }},{{ index_result.ttl }},'{{ index_result.response|escape }}'],{% endfor %}{% endfor %}]);
       var table = new google.visualization.Table(document.getElementById('index_table'));
-      table.draw(data);
+      table.draw(data, {allowHtml: true});
     }
   </script> 
 </head>
