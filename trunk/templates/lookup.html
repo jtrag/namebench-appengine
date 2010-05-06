@@ -14,9 +14,9 @@
       data.addColumn('string', 'Record');
       data.addColumn('number', 'Duration');
       data.addColumn('number', 'TTL');
-      data.addColumn('number', 'Answer Count');
+      data.addColumn('string', 'Response');
       data.addRows([{% for ns_sub in nsdata %}{% for index_result in ns_sub.index_results %}
-        ['{% if ns_sub.nameserver.name %}{{ ns_sub.nameserver.name }}{% else %}{{ ns_sub.nameserver.ip }}{% endif %}','{{ index_result.index_host.record_name }}',{{ index_result.duration|floatformat:3 }},{{ index_result.ttl }},{{ index_result.answer_count }}],{% endfor %}{% endfor %}]);
+        ['{% if ns_sub.nameserver.name %}{{ ns_sub.nameserver.name }}{% else %}{{ ns_sub.nameserver.ip }}{% endif %}','{{ index_result.index_host.record_name }}',{{ index_result.duration|floatformat:3 }},{{ index_result.ttl }},'{{ index_result.response }}'],{% endfor %}{% endfor %}]);
       var table = new google.visualization.Table(document.getElementById('index_table'));
       table.draw(data);
     }

@@ -53,7 +53,7 @@ class SubmitHandler(webapp.RequestHandler):
   def _process_index_submission(self, index_results, ns_sub, index_hosts):
     """Process the index submission for a particular host."""
 
-    for host, req_type, duration, answer_count, ttl in index_results:
+    for host, req_type, duration, answer_count, ttl, response in index_results:
       results = None
 
       for record in index_hosts:
@@ -64,6 +64,7 @@ class SubmitHandler(webapp.RequestHandler):
           results.duration = duration
           results.answer_count = answer_count
           results.ttl = ttl
+          results.response = response
           results.put()
           break
 
@@ -72,6 +73,7 @@ class SubmitHandler(webapp.RequestHandler):
 
   def post(self):
     """Store the results from a submission. Rather long."""
+    notes = []
     dupe_check_id = self.request.get('duplicate_check')
     data = simplejson.loads(self.request.get('data'))
     class_c_tuple = self.request.remote_addr.split('.')[0:3]
@@ -82,11 +84,11 @@ class SubmitHandler(webapp.RequestHandler):
       listed = True
 
     if data['config']['query_count'] < MIN_QUERY_COUNT:
-      self.response.out.write("Not enough queries to list.")
+      notes.append("Not enough queries to list.")
       listed = False
 
     if len(data['nameservers']) < MIN_SERVER_COUNT:
-      self.response.out.write("Not enough servers to list.")
+      notes.append("Not enough servers to list.")
       listed = False
 
     cached_index_hosts = []
@@ -99,14 +101,11 @@ class SubmitHandler(webapp.RequestHandler):
     submission.listed = listed
 
     if 'geodata' in data:
-      self.response.out.write("geodata: %s" % data['geodata'])
       if 'latitude' in data['geodata']:
         submission.coordinates = ','.join((str(data['geodata']['latitude']), str(data['geodata']['longitude'])))
         submission.city = data['geodata']['address'].get('city', None)
         submission.region = data['geodata']['address'].get('region', None)
         submission.country = data['geodata']['address'].get('country', None)    
-    else:
-      self.response.out.write("No geodata!")
     submission.put()
     
     # Dump configuration for later reference.
@@ -172,3 +171,9 @@ class SubmitHandler(webapp.RequestHandler):
 
     # Final update with the primary_nameserver / best_nameserver data.
     submission.put()
+    response = {
+        'listed': listed,
+        'url': '/id/%s' % submission.key().id(),
+        'notes': notes
+    }
+    self.response.out.write(simplejson.dumps(response))
