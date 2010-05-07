@@ -39,7 +39,7 @@ class MainHandler(webapp.RequestHandler):
     query = models.Submission.all()
 #    query.filter('listed =', True)
     query.order('-timestamp')
-    recent_submissions = query.fetch(10)
+    recent_submissions = query.fetch(25)
     template_values = {
       'recent_submissions': recent_submissions
     }  
