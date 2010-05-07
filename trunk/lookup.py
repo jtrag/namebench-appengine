@@ -46,9 +46,11 @@ class LookupHandler(webapp.RequestHandler):
 
     template_values = {
       'id': id,
+      'index_data': self._CreateIndexData(nsdata),
+      'best_nameserver': submission.best_nameserver,
+      'best_improvement': submission.best_improvement,
       'config': self._GetConfigTuples(submission),
-      'nsdata': nsdata,
-      'submission': submission,
+      'nsdata': self._CreateNameServerTable(nsdata),
       'mean_duration_url': self._CreateMeanDurationUrl(nsdata),
       'min_duration_url': self._CreateMinimumDurationUrl(nsdata_nearest),
       'distribution_url_200': self._CreateDistributionUrl(nsdata, 200),
@@ -93,3 +95,31 @@ class LookupHandler(webapp.RequestHandler):
     """Sort distribution graph by name (for now)."""
     return cmp(a[0].name, b[0].name)
 
+  def _CreateIndexData(self, nsdata):
+    data = []
+  
+    for ns_sub in nsdata:
+      for result in ns_sub.index_results:
+        name = ns_sub.nameserver.name
+        if not name:
+          name = ns_sub.nameserver.ip
+          
+        data.append("['%s','%s',%0.3f,%i,'%s']," % (name, result.index_host.record_name,
+                                                   result.duration, result.ttl, result.response))
+    return ''.join(data)
+    
+  def _CreateNameServerTable(self, nsdata):
+    table = []
+    for ns_sub in nsdata:
+      table.append({
+        'ip': ns_sub.nameserver.ip,
+        'name': ns_sub.nameserver.name,
+        'hostname': ns_sub.nameserver.hostname,
+        'overall_average': ns_sub.overall_average,
+        'duration_min': ns_sub.duration_min,
+        'duration_max': ns_sub.duration_max,
+        'failed_count': ns_sub.failed_count,
+        'nx_count': ns_sub.nx_count,
+        'notes': ns_sub.notes
+      })
+    return table

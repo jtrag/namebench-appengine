@@ -15,8 +15,7 @@
       data.addColumn('number', 'Duration');
       data.addColumn('number', 'TTL');
       data.addColumn('string', 'Response');
-      data.addRows([{% for ns_sub in nsdata %}{% for index_result in ns_sub.index_results %}
-        ['{% if ns_sub.nameserver.name %}{{ ns_sub.nameserver.name|escape }}{% else %}{{ ns_sub.nameserver.ip|escape }}{% endif %}','{{ index_result.index_host.record_name|escape }}',{{ index_result.duration|floatformat:3 }},{{ index_result.ttl }},'{{ index_result.response|escape }}'],{% endfor %}{% endfor %}]);
+      data.addRows([{{ index_data }}]);
       var table = new google.visualization.Table(document.getElementById('index_table'));
       table.draw(data, {allowHtml: true});
     }
@@ -27,14 +26,14 @@
 <div id="container">
 <div class="version">namebench {{ version }}</div>
 <div id="big_summary" class="greybox">
-{% ifequal submission.best_nameserver submission.primary_nameserver %}
+{% ifequal best_nameserver submission.primary_nameserver %}
   Your primary DNS server
-  <h4><strong>{{ submission.best_nameserver.ip|escape }}</strong></h4>
+  <h4><strong>{{ best_nameserver.ip|escape }}</strong></h4>
   Is already the fastest.
 {% else %}
-	<h4><strong>{{ submission.best_nameserver.name|escape }}</strong> is</h4>
-	{% if submission.best_improvement %}
-  	<h1>{{ submission.best_improvement|floatformat }}%</h1><h5 class="faster">faster than</h5>
+	<h4><strong>{{ best_nameserver.name|escape }}</strong> is</h4>
+	{% if best_improvement %}
+  	<h1>{{ best_improvement|floatformat }}%</h1><h5 class="faster">faster than</h5>
   {% else %}
     <h1>N/A<h1><h5 class="flaster">compared to</h5>
   {% endif %}
@@ -76,9 +75,9 @@
 
 {% for sub in nsdata %}
 <tr class="{% if sub.is_disabled %}disabled{% else %}normal {% cycle odd,even %}{% endif %}{% ifequal sub.sys_position 0 %} primary_row{% endifequal %}{% if sub.is_error_prone %} unhealthy_host{% endif %}">
-  <td>{{ sub.nameserver.ip|escape }}</td>
-  <td>{{ sub.nameserver.name|escape }}</td>
-  <td>{{ sub.nameserver.hostname|escape }}</td>
+  <td>{{ sub.ip|escape }}</td>
+  <td>{{ sub.name|escape }}</td>
+  <td>{{ sub.hostname|escape }}</td>
   <td>{{ sub.overall_average|floatformat }}</td>
   <td>{{ sub.duration_min|floatformat }}</td>
   <td>{{ sub.duration_max|floatformat }}</td>
