@@ -62,8 +62,9 @@
 <thead>
 <tr>
   <td nowrap="nowrap">IP</td>
-  <td nowrap="nowrap">Descr.</td>
+  <td>Descr.</td>
   <td nowrap="nowrap">Hostname</td>
+  <td nowrap="nowrap">Diff</td>
   <td nowrap="nowrap">Avg (ms)</td>
 	<td nowrap="nowrap">Min</td>
 	<td nowrap="nowrap">Max</td>
@@ -78,6 +79,7 @@
   <td>{{ sub.ip|escape }}</td>
   <td>{{ sub.name|escape }}</td>
   <td>{{ sub.hostname|escape }}</td>
+  <td>{{ sub.overall_average|floatformat }}% </td>  
   <td>{{ sub.overall_average|floatformat }}</td>
   <td>{{ sub.duration_min|floatformat }}</td>
   <td>{{ sub.duration_max|floatformat }}</td>
@@ -108,13 +110,9 @@
 
 <img src="{{ distribution_url_200 }}" alt="Response Distribution Graph (first 200ms)" />
 
-<h3>Response Distribution Chart (Full)</h3>
-
-<img src="{{ distribution_url }}" alt="Response Distribution Graph (full)" />
-</div>
-
 <h2>Index Results</h2>
 
+<small>Temporarily disabled due to poor performance.</small>
 <div id="index_table"></div>
 
 <h2>Config</h2>

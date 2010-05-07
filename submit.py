@@ -120,9 +120,9 @@ class SubmitHandler(webapp.RequestHandler):
           ip=nsdata['ip'],
           name=nsdata['name'],
           hostname=nsdata['hostname'],
-          is_global=nsdata['is_global'],
-          is_regional=nsdata['is_regional'],
-          is_custom=nsdata['is_custom'],
+          is_global=nsdata.get('is_global', False),
+          is_regional=nsdata.get('is_regional', False),
+          is_custom=nsdata.get('is_custom', False),
           listed=False
       )
       ns_map[nsdata['ip']] = ns_record

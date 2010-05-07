@@ -46,7 +46,7 @@ class LookupHandler(webapp.RequestHandler):
 
     template_values = {
       'id': id,
-      'index_data': self._CreateIndexData(nsdata),
+      'index_data': [],     # DISABLED: self._CreateIndexData(nsdata)
       'best_nameserver': submission.best_nameserver,
       'best_improvement': submission.best_improvement,
       'config': self._GetConfigTuples(submission),
@@ -54,7 +54,7 @@ class LookupHandler(webapp.RequestHandler):
       'mean_duration_url': self._CreateMeanDurationUrl(nsdata),
       'min_duration_url': self._CreateMinimumDurationUrl(nsdata_nearest),
       'distribution_url_200': self._CreateDistributionUrl(nsdata, 200),
-      'distribution_url': self._CreateDistributionUrl(nsdata, 3000),
+#      'distribution_url': self._CreateDistributionUrl(nsdata, 3000),
       'recommended': recommended,
     }
     path = os.path.join(os.path.dirname(__file__), 'templates', 'lookup.html')
@@ -114,7 +114,11 @@ class LookupHandler(webapp.RequestHandler):
       table.append({
         'ip': ns_sub.nameserver.ip,
         'name': ns_sub.nameserver.name,
+        'is_disabled': ns_sub.is_disabled,
+        'is_reference': ns_sub.is_reference,
+        'sys_position': ns_sub.sys_position,
         'hostname': ns_sub.nameserver.hostname,
+        'diff': ns_sub.improvement,
         'overall_average': ns_sub.overall_average,
         'duration_min': ns_sub.duration_min,
         'duration_max': ns_sub.duration_max,
