@@ -32,6 +32,9 @@ class NameServer(db.Model):
   province = db.StringProperty()
   country = db.StringProperty()
   coordinates = db.GeoPtProperty()
+  is_global = db.BooleanProperty()
+  is_regional = db.BooleanProperty()
+  is_custom = db.BooleanProperty()
   url = db.LinkProperty()
   timestamp = db.DateTimeProperty(auto_now_add=True)
   
@@ -71,6 +74,7 @@ class SubmissionNameServer(db.Model):
   submission = db.ReferenceProperty(Submission, collection_name='nameservers')  
   is_error_prone = db.BooleanProperty()
   is_disabled = db.BooleanProperty()
+  is_reference = db.BooleanProperty()
   overall_average = db.FloatProperty()
   averages = db.ListProperty(float)
   duration_min = db.FloatProperty()
