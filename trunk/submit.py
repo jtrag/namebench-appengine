@@ -26,7 +26,7 @@ from django.utils import simplejson
 
 import models
 
-MIN_QUERY_COUNT = 75
+MIN_QUERY_COUNT = 100
 MIN_SERVER_COUNT = 7
 # The minimum amount of time between submissions that we list
 # TODO(tstromberg): Fix duplication in tasks.py
@@ -67,7 +67,7 @@ class SubmitHandler(webapp.RequestHandler):
       duplicate_count += 1
     return duplicate_count
 
-  def _process_index_submission(self, index_results, ns_sub, index_hosts):
+  def _process_index_submission(self, index_results, submission, ns_sub, index_hosts):
     """Process the index submission for a particular host."""
 
     for host, req_type, duration, answer_count, ttl, response in index_results:
@@ -75,7 +75,7 @@ class SubmitHandler(webapp.RequestHandler):
 
       for record in index_hosts:
         if host == record.record_name and req_type == record.record_type:
-          results = models.IndexResult()
+          results = models.IndexResult(parent=submission)
           results.submission_nameserver = ns_sub
           results.index_host = record
           results.duration = duration
@@ -93,24 +93,52 @@ class SubmitHandler(webapp.RequestHandler):
     notes = []
     dupe_check_id = self.request.get('duplicate_check')
     data = simplejson.loads(self.request.get('data'))
-    class_c_tuple = self.request.remote_addr.split('.')[0:3]
-    class_c = '.'.join(class_c_tuple)
-    if self._duplicate_run_count(class_c, dupe_check_id):
-      listed = False
-    else:
-      listed = True
-
-    if data['config']['query_count'] < MIN_QUERY_COUNT:
-      notes.append("Not enough queries to list.")
-      listed = False
-
-    if len(data['nameservers']) < MIN_SERVER_COUNT:
-      notes.append("Not enough servers to list.")
-      listed = False
+    ip = self.request.remote_addr
+    class_c = '.'.join(ip.split('.')[0:3])
 
     cached_index_hosts = []
     for record in db.GqlQuery("SELECT * FROM IndexHost WHERE listed=True"):
       cached_index_hosts.append(record)
+    ns_map = self.insert_nameservers_from_data(data)
+    if self._duplicate_run_count(class_c, dupe_check_id):
+      listed = False
+    else:
+      listed = True
+    
+    return db.run_in_transaction(self.insert_data, class_c, dupe_check_id, data, ns_map, cached_index_hosts, listed=listed)
+
+  def insert_nameservers_from_data(self, data):
+    """Insert nameservers from data. Designed to run in another transaction.
+    
+    Caches the result for re-use by insert_data
+    """
+
+    ns_map = {}
+    for nsdata in data['nameservers']:
+      ns_record = models.NameServer.get_or_insert(
+          nsdata['ip'],
+          ip=nsdata['ip'],
+          name=nsdata['name'],
+          hostname=nsdata['hostname'],
+          is_global=nsdata['is_global'],
+          is_regional=nsdata['is_regional'],
+          is_custom=nsdata['is_custom'],
+          listed=False
+      )
+      ns_map[nsdata['ip']] = ns_record
+    return ns_map
+      
+  def insert_data(self, class_c, dupe_check_id, data, ns_map, cached_index_hosts, listed=True):
+    """Process data uploaded by namebench."""
+    
+    notes = []
+    if data['config']['query_count'] < MIN_QUERY_COUNT:
+      notes.append("Not enough queries to list (need %s)." % MIN_QUERY_COUNT)
+      listed = False
+
+    if len(data['nameservers']) < MIN_SERVER_COUNT:
+      notes.append("Not enough servers to list (need %s)." % MIN_SERVER_COUNT)
+      listed = False
 
     submission = models.Submission()
     submission.dupe_check_id = int(dupe_check_id)
@@ -122,7 +150,7 @@ class SubmitHandler(webapp.RequestHandler):
       notes.append("Hidden on request: %s [%s]" % (hide_me, type(hide_me)))
       submission.hidden = True
       listed = False
-    elif is_private_ip(self.request.remote_addr):
+    elif is_private_ip(class_c):
       notes.append("Hidden due to internal IP.")
       submission.hidden = True
       listed = False
@@ -145,7 +173,7 @@ class SubmitHandler(webapp.RequestHandler):
     submission.put()
     
     # Dump configuration for later reference.
-    config = models.SubmissionConfig()
+    config = models.SubmissionConfig(parent=submission)
     config.submission = submission
     config.query_count = data['config']['query_count']
     config.run_count = data['config']['run_count']
@@ -166,27 +194,29 @@ class SubmitHandler(webapp.RequestHandler):
         reference_latency = list_average(nsdata['averages'])
 
     for nsdata in data['nameservers']:
-      ns_record = models.NameServer.get_or_insert(nsdata['ip'], ip=nsdata['ip'],
-                                                  name=nsdata['name'], hostname=nsdata['hostname'],
-                                                  listed=False)
-      ns_sub = models.SubmissionNameServer()
+      # TODO(tstromberg): Look into caching this from our previous results.
+      ns_record = ns_map[nsdata['ip']]
+      ns_sub = models.SubmissionNameServer(parent=submission)
       ns_sub.submission = submission
       ns_sub.nameserver = ns_record
       ns_sub.averages = nsdata['averages']
-      ns_sub.overall_average = list_average(nsdata['averages'])
+      ns_sub.overall_average = nsdata['overall_average']
+      ns_sub.check_average = nsdata['check_average']
       ns_sub.duration_min = nsdata['min']
       ns_sub.duration_max = nsdata['max']
       ns_sub.failed_count = nsdata['failed']
       ns_sub.is_error_prone = nsdata['is_error_prone']
+      ns_sub.is_reference = nsdata['is_reference']
       ns_sub.is_disabled = nsdata['is_disabled']
       ns_sub.nx_count = nsdata['nx']
       ns_sub.sys_position = nsdata['sys_position']
       ns_sub.position = nsdata['position']
-      ns_sub.notes = nsdata['notes']
+      # Only include the text information, not the URL.
+      ns_sub.notes = [x['text'] for x in nsdata['notes']]
       if ns_sub.sys_position == 0:
         submission.primary_nameserver = ns_record
       elif reference_latency:
-        ns_sub.improvement = ((reference_latency / ns_sub.overall_average) - 1) * 100
+        ns_sub.improvement = nsdata['diff']
 
       ns_sub_instance = ns_sub.put()
 
@@ -197,13 +227,13 @@ class SubmitHandler(webapp.RequestHandler):
           submission.best_improvement = ns_sub.improvement
 
       for idx, run in enumerate(nsdata['durations']):
-        run_results = models.RunResult()
+        run_results = models.RunResult(parent=submission)
         run_results.submission_nameserver = ns_sub
         run_results.run_number = idx
         run_results.durations = list(run)
         run_results.put()
 
-      self._process_index_submission(nsdata['index'], ns_sub_instance, cached_index_hosts)
+      self._process_index_submission(nsdata['index'], submission, ns_sub_instance, cached_index_hosts)
 
     # Final update with the primary_nameserver / best_nameserver data.
     submission.put()

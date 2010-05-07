@@ -24,6 +24,7 @@ from google.appengine.ext.webapp import util
 from django.utils import simplejson
 
 import models
+import nameserver
 import lookup
 import submit
 import tasks
@@ -61,6 +62,7 @@ def main():
   url_mapping = [
       ('/', MainHandler),
       ('/id/(\d+)', lookup.LookupHandler),
+      ('/ns/([\d\.:]+)', nameserver.LookupHandler),
       ('/index_hosts', IndexHostsHandler),
       ('/tasks/clear_dupes', tasks.ClearDuplicateIdHandler),
       ('/tasks/load_index_hosts', tasks.ImportIndexHostsHandler),

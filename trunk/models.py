@@ -65,8 +65,7 @@ class SubmissionConfig(db.Model):
   os_release = db.StringProperty()
   python_version = db.StringProperty()
   namebench_version = db.StringProperty()
-
-
+  
 class SubmissionNameServer(db.Model):
   nameserver = db.ReferenceProperty(NameServer, collection_name='submissions')
   submission = db.ReferenceProperty(Submission, collection_name='nameservers')  
