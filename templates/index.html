@@ -6,8 +6,11 @@
   <link href="/media/style.css" rel="stylesheet" type="text/css" />
   <title>namebench reports site</title></head>
 <body id="site">
-  <div id="left"></div>
   <div id="container">  
+  <img src="/media/front-left.png" id="left">
+  <img src="/media/front-right.png" id="right">
+  
+  <div id="inner">
   <div id="header"><h1>namebench results</h1></div>
 
   <p>This site provides DNS performance data which has been submitted by users of 
@@ -19,7 +22,7 @@
   
   <h2>Recent Submissions</h2>
   
-  <p>These are the most recent 25 submissions. Results may be greyed out if there was not enough data provided for a conclusive result.</p>
+  <p>These are the most recent 10 submissions. Results may be greyed out if there was not enough data provided for a conclusive result.</p>
   <div id="nsdetails">
   <table id="nstable">
     <thead>
@@ -57,9 +60,8 @@
 <p>The source code for this website is available at <a
 href="http://namebench-appengine.googlecode.com/">Google Code</a>.
 Contributions are welcome!</p>
-
 </div>
-<div id="right"></div>
+</div>
 <div class="tinyprint">&copy; 2010 Google Inc. &mdash; Powered by Google App Engine.</div>
 </body>
 </html>
