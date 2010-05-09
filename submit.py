@@ -188,56 +188,64 @@ class SubmitHandler(webapp.RequestHandler):
     config.input_source = data['config']['input_source']
     config.put()
     
-    reference_latency = None
-    for nsdata in data['nameservers']:
-      if nsdata['sys_position'] == 0:
-        reference_latency = list_average(nsdata['averages'])
-
     for nsdata in data['nameservers']:
       # TODO(tstromberg): Look into caching this from our previous results.
       ns_record = ns_map[nsdata['ip']]
       ns_sub = models.SubmissionNameServer(parent=submission)
       ns_sub.submission = submission
       ns_sub.nameserver = ns_record
-      ns_sub.averages = nsdata['averages']
-      ns_sub.overall_average = nsdata['overall_average']
-      ns_sub.check_average = nsdata['check_average']
-      ns_sub.duration_min = nsdata['min']
-      ns_sub.duration_max = nsdata['max']
-      ns_sub.failed_count = nsdata['failed']
-      ns_sub.is_error_prone = nsdata['is_error_prone']
-      ns_sub.is_reference = nsdata['is_reference']
-      ns_sub.is_disabled = nsdata['is_disabled']
-      ns_sub.nx_count = nsdata['nx']
-      ns_sub.sys_position = nsdata['sys_position']
-      ns_sub.position = nsdata['position']
-      # Only include the text information, not the URL.
-      ns_sub.notes = [x['text'] for x in nsdata['notes']]
-      if ns_sub.sys_position == 0:
-        submission.primary_nameserver = ns_record
-      elif reference_latency:
+      if nsdata.get('averages'):
+        ns_sub.averages = nsdata['averages']
+      if nsdata.get('overall_average'):
+        ns_sub.overall_average = nsdata['overall_average']
+      ns_sub.check_average = nsdata.get('check_average', 0.0)
+      if nsdata.get('min') != None:
+        ns_sub.duration_min = nsdata['min']
+      if nsdata.get('max') != None:
+        ns_sub.duration_max = nsdata['max']
+      if nsdata.get('failed') != None:
+        ns_sub.failed_count = nsdata['failed']
+      if nsdata.get('is_error_prone') != None:
+        ns_sub.is_error_prone = nsdata['is_error_prone']
+      if nsdata.get('is_reference') != None:
+        ns_sub.is_reference = nsdata['is_reference']
+      if nsdata.get('is_disabled') != None:
+        ns_sub.is_disabled = nsdata['is_disabled']
+      if nsdata.get('nx') != None:
+        ns_sub.nx_count = nsdata['nx']
+      if nsdata.get('sys_position') != None:
+        ns_sub.sys_position = nsdata['sys_position']
+        if nsdata['sys_position'] == 0:
+          submission.primary_nameserver = ns_record
+      if nsdata.get('position') != None:
+        ns_sub.position = nsdata['position']
+      if nsdata.get('notes'):
+        # Only include the text information, not the URL.
+        ns_sub.notes = [x['text'] for x in nsdata['notes']]
+      if nsdata.get('diff'):
         ns_sub.improvement = nsdata['diff']
-
       ns_sub_instance = ns_sub.put()
-
 
       if ns_sub.position == 0:
         submission.best_nameserver = ns_record
         if not ns_sub.sys_position == 0 and ns_sub.improvement:
           submission.best_improvement = ns_sub.improvement
 
-      for idx, run in enumerate(nsdata['durations']):
-        run_results = models.RunResult(parent=submission)
-        run_results.submission_nameserver = ns_sub
-        run_results.run_number = idx
-        run_results.durations = list(run)
-        run_results.put()
+      if nsdata.get('durations'):
+        for idx, run in enumerate(nsdata['durations']):
+          run_results = models.RunResult(parent=submission)
+          run_results.submission_nameserver = ns_sub
+          run_results.run_number = idx
+          run_results.durations = list(run)
+          run_results.put()
 
-      self._process_index_submission(nsdata['index'], submission, ns_sub_instance, cached_index_hosts)
+      if nsdata.get('index'):
+        self._process_index_submission(nsdata['index'], submission, ns_sub_instance,
+                                       cached_index_hosts)
 
     # Final update with the primary_nameserver / best_nameserver data.
     submission.put()
-    if submission.listed:
+    if listed:
       state = 'public'
     elif submission.hidden:
       state = 'hidden'
