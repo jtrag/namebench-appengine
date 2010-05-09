@@ -8,23 +8,24 @@ a {
 }
 
 #container {
-  width: 800px;
-  float: left;
-  padding-left: 32px;
+  width: 950px;
 }
 
+#inner {
+  margin-right: 20px;
+  max-width: 850px;
+  float: right;
+}
+
+}
 #left {
-  background-image: url(/media/front-left.png);
-  width: 24px;
-  min-height: 461px;
   float: left;
+  height: 100%;
 }
 
 #right {
-  background-image: url(/media/front-right.png);
-  width: 38px;
-  min-height: 428px;
   float: right;
+  height: 100%;
 }
 
 
@@ -72,7 +73,12 @@ table#nstable {
   vertical-align:  top;
 }
 
-
+.even {
+  background-color: #fff
+}
+.odd {
+  background-color: #ebeff9;
+}
 
 .disabled {
   background-color:  #333;
