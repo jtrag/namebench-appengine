@@ -8,26 +8,22 @@ a {
 }
 
 #container {
-  width: 950px;
+  width: 900px;
 }
 
-#inner {
-  margin-right: 20px;
-  max-width: 850px;
-  float: right;
+#content {
+  padding: 0 75px 0 75px;
 }
 
-}
 #left {
   float: left;
-  height: 100%;
+  width: 65px;
 }
 
 #right {
   float: right;
-  height: 100%;
+  width: 65px;
 }
-
 
 #header {
   background-image: url(/media/dns-fraggle2-64px.png);
@@ -94,8 +90,11 @@ table#nstable {
   color: #e5e5e5;
 }
 
-.tinyprint {
+.clear {
   clear: both;
+}
+
+.footer {
   color: #666;
   text-align: center;
   font-size: x-small;
