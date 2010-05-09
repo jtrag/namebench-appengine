@@ -32,27 +32,36 @@ class LookupHandler(webapp.RequestHandler):
 
   def get(self, id):
     submission = models.Submission.get_by_id(int(id))
-    nsdata = self._GetSubmissionNameServers(submission).order("overall_average")
-    nsdata_nearest = self._GetSubmissionNameServers(submission).order("duration_min")
-    recommended = [nsdata[0]]
-    
-    # We need to make sure the nearest server is not also the fastest.
-    for record in nsdata_nearest:
-      if record.key() != recommended[0].key():
-        recommended.append(record)
+    nsdata = models.SubmissionNameServer.all().filter("submission =", submission)
+    ns_summary = self._CreateNameServerTable(nsdata)
+    if not ns_summary:
+      return self.response.out.write("Bummer. ID#%s (%s) has no data." % (id, submission.timestamp))
       
-      if len(recommended) == 3:
-        break
+    recommended = [ns_summary[0]]
+    reference = None
+    
+    for row in ns_summary:
+      if row['is_reference']:
+        reference = row
+    
+    for record in sorted(ns_summary, key=operator.itemgetter('duration_min')):
+      if record['ip'] != recommended[0]['ip']:
+        recommended.append(record)
+        if len(recommended) == 3:
+          break
+          
+#    return self.response.out.write("%s" % recommende)
 
     template_values = {
       'id': id,
       'index_data': [],     # DISABLED: self._CreateIndexData(nsdata)
+      'nsdata': ns_summary,
       'best_nameserver': submission.best_nameserver,
       'best_improvement': submission.best_improvement,
       'config': self._GetConfigTuples(submission),
       'nsdata': self._CreateNameServerTable(nsdata),
       'mean_duration_url': self._CreateMeanDurationUrl(nsdata),
-      'min_duration_url': self._CreateMinimumDurationUrl(nsdata_nearest),
+      'min_duration_url': self._CreateMinimumDurationUrl(nsdata),
       'distribution_url_200': self._CreateDistributionUrl(nsdata, 200),
 #      'distribution_url': self._CreateDistributionUrl(nsdata, 3000),
       'recommended': recommended,
@@ -78,8 +87,8 @@ class LookupHandler(webapp.RequestHandler):
     runs_data = [(x.nameserver.name, x.averages) for x in nsdata]
     return charts.PerRunDurationBarGraph(runs_data)
 
-  def _CreateMinimumDurationUrl(self, nsdata_nearest):
-    fastest_data = [(x.nameserver, x.duration_min) for x in nsdata_nearest]
+  def _CreateMinimumDurationUrl(self, nsdata):
+    fastest_data = [(x.nameserver, x.duration_min) for x in nsdata if not x.is_disabled]
     return charts.MinimumDurationBarGraph(fastest_data)
 
   def _CreateDistributionUrl(self, nsdata, scale):

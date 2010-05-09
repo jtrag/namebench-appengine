@@ -1,7 +1,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
-  <title>namebench results: {{ id }} at {{ submission.timestamp }}</title>
+  <title>namebench results: {{ id }}</title>
   <link href="/media/report.css" rel="stylesheet" type="text/css" />
   
   <script type='text/javascript' src='http://www.google.com/jsapi'></script>
@@ -49,7 +49,7 @@
 	  <td>{% ifequal forloop.counter 1 %}Primary{% endifequal %}
 	      {% ifequal forloop.counter 2 %}Secondary{% endifequal %}
 	      {% ifequal forloop.counter 3 %}Tertiary{% endifequal %} Server</td>
-    <td><div class="ip">{{ ns.nameserver.ip|escape }}</div></td><td class="rec_name">{{ ns.nameserver.name|escape }}</td>
+    <td><div class="ip">{{ ns.ip|escape }}</div></td><td class="rec_name">{{ ns.name|escape }}</td>
 	</tr>
   {% endfor %}
   </table>
@@ -79,12 +79,12 @@
   <td>{{ sub.ip|escape }}</td>
   <td>{{ sub.name|escape }}</td>
   <td>{{ sub.hostname|escape }}</td>
-  <td>{{ sub.overall_average|floatformat }}% </td>  
-  <td>{{ sub.overall_average|floatformat }}</td>
-  <td>{{ sub.duration_min|floatformat }}</td>
-  <td>{{ sub.duration_max|floatformat }}</td>
+  <td>{% if sub.improvement %}{{ sub.improvement|floatformat }}%{% endif %}</td>  
+  <td>{% if sub.overall_average %}{{ sub.overall_average|floatformat }}{% endif %}</td>
+  <td>{% if sub.duration_min %}{{ sub.duration_min|floatformat }}{% endif %}</td>
+  <td>{% if sub.duration_max %}{{ sub.duration_max|floatformat }}{% endif %}</td>
   <td {% if sub.failed_count %}class="error_count"{% endif %}>{{ sub.failed_count }}</td>
-  <td>{{ sub.nx_count }}</td>
+  <td>{% if sub.nx_count %}{{ sub.nx_count }}{% endif %}</td>
   <td>
   {% if sub.notes %}
     <ul class="warnings">
