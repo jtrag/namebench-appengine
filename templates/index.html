@@ -4,7 +4,23 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 <head>
   <link href="/media/style.css" rel="stylesheet" type="text/css" />
-  <title>namebench reports site</title></head>
+  <title>namebench reports site</title>
+  <script src="http://maps.google.com/maps?file=api&amp;v=2&amp;sensor=false&amp;key={{ maps_api_key }}" type="text/javascript" type="text/javascript"></script>
+      <script type="text/javascript">
+      function initialize() {
+        if (GBrowserIsCompatible()) {
+          var map = new GMap2(document.getElementById("map_canvas"));
+          map.setCenter(new GLatLng(30, 0), 1);
+          {% for submission in recent_submissions %}
+          map.addOverlay(new GMarker(new GLatLng({{ submission.coordinates }})));{% endfor %}
+        }
+      }
+      </script>
+    </head>
+    <body onload="initialize()" onunload="GUnload()">
+  
+  
+</head>
 <body id="site">
   <div id="container">  
   <div id="left"><img src="/media/front-left.png" alt="Left bar" /></div>
@@ -13,16 +29,21 @@
   <div id="content">
   <div id="header"><h1>namebench results</h1></div>
 
-  <p>This site provides DNS performance data which has been submitted by users of 
-  <strong><a href="http://namebench.googlecode.com/">namebench</a></strong> DNS benchmarking software. For privacy reasons, namebench only uploads details on a predefined list of <a
-  href="http://namebench.appspot.com/index_hosts">index 
-  hosts</a>, and masks internal IP addresses before uploading. To share your own results, download the <a href="http://code.google.com/p/namebench/downloads/list">namebench 1.3-alpha</a>, and run:</p>
+  <p>
+    
+    This site contains DNS performance data which has been submitted by users of 
+  <strong><a href="http://namebench.googlecode.com/">namebench</a></strong> DNS benchmarking software. 
+  To share your own results, download the latest <a href="http://code.google.com/p/namebench/downloads/list">namebench 1.3-alpha</a>, and run:</p>
   
   <pre>./namebench.py -u</pre>
   
+  <p>For privacy reasons, namebench only uploads details on a predefined list of <a
+  href="http://namebench.appspot.com/index_hosts">index 
+  hosts</a>, and masks internal IP addresses before uploading.</p>
+  
   <h2>Recent Submissions</h2>
   
-  <p>These are the most recent 15 submissions. Results may be greyed out if subsequent runs are generated from the same host within 6 hours, or if there was not enough data provided for a conclusive result.</p>
+  <p>Results may be unlisted if there were other recent listed submissions from the same host, or if there was not enough data provided for a conclusive result.</p>
   <div id="nsdetails">
   <table id="nstable">
     <thead>
@@ -54,6 +75,10 @@
 </tbody>
 </table>
 </div>
+
+<h2>Submissions Map</h2>
+
+<div class="mapwrapper"><div id="map_canvas" style="width: 500px; height: 300px"></div></div>
 
 <h2>Source Code</h2>
 
