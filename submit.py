@@ -58,14 +58,15 @@ class SubmitHandler(webapp.RequestHandler):
 
   """Handler for result submissions."""
 
-  def _duplicate_run_count(self, class_c, dupe_check_id):
+  def _duplicate_run_count(self, class_c, client_id, submit_id):
     """Check if the user has submitted anything in the last 24 hours."""
+    dupes = models.Submission.all().filter("submit_id = ", submit_id).filter("class_c = ", class_c).count()
+    if dupes:
+      return -1
+    
     check_ts = datetime.datetime.now() - MIN_LISTING_DELTA
-    query = 'SELECT * FROM Submission WHERE class_c=:1 AND dupe_check_id=:2 AND timestamp > :3'
-    duplicate_count = 0
-    for record in db.GqlQuery(query, class_c, dupe_check_id, check_ts):
-      duplicate_count += 1
-    return duplicate_count
+    excess_listings = models.Submission.all().filter("client_id =", client_id).filter("class_c =", class_c).filter("timestamp > ", check_ts).filter("listed = ", True).count()
+    return excess_listings
 
   def _process_index_submission(self, index_results, submission, ns_sub, index_hosts):
     """Process the index submission for a particular host."""
@@ -91,7 +92,8 @@ class SubmitHandler(webapp.RequestHandler):
   def post(self):
     """Store the results from a submission. Rather long."""
     notes = []
-    dupe_check_id = self.request.get('duplicate_check')
+    client_id = int(self.request.get('client_id'))
+    submit_id = int(self.request.get('submit_id'))
     data = simplejson.loads(self.request.get('data'))
     ip = self.request.remote_addr
     class_c = '.'.join(ip.split('.')[0:3])
@@ -100,12 +102,14 @@ class SubmitHandler(webapp.RequestHandler):
     for record in db.GqlQuery("SELECT * FROM IndexHost WHERE listed=True"):
       cached_index_hosts.append(record)
     ns_map = self.insert_nameservers_from_data(data)
-    if self._duplicate_run_count(class_c, dupe_check_id):
-      listed = False
-    else:
-      listed = True
+    excess_listings = self._duplicate_run_count(class_c, client_id, submit_id)
+    # A special handler for the unlikely case of a duplicate submit_id. 
+    if excess_listings == -1:
+      response = {'state': 'dupe', 'url': '/', 'notes': ["Duplicate submit_id. How'd that happen?"]}
+      return self.response.out.write(simplejson.dumps(response))
     
-    return db.run_in_transaction(self.insert_data, class_c, dupe_check_id, data, ns_map, cached_index_hosts, listed=listed)
+    return db.run_in_transaction(self.insert_data, class_c, submit_id, client_id, data, ns_map,
+                                 cached_index_hosts, excess_listings=excess_listings)
 
   def insert_nameservers_from_data(self, data):
     """Insert nameservers from data. Designed to run in another transaction.
@@ -128,10 +132,12 @@ class SubmitHandler(webapp.RequestHandler):
       ns_map[nsdata['ip']] = ns_record
     return ns_map
       
-  def insert_data(self, class_c, dupe_check_id, data, ns_map, cached_index_hosts, listed=True):
+  def insert_data(self, class_c, submit_id, client_id, data, ns_map, cached_index_hosts, excess_listings=None):
     """Process data uploaded by namebench."""
     
     notes = []
+    listed = True
+  
     if data['config']['query_count'] < MIN_QUERY_COUNT:
       notes.append("Not enough queries to list (need %s)." % MIN_QUERY_COUNT)
       listed = False
@@ -140,8 +146,15 @@ class SubmitHandler(webapp.RequestHandler):
       notes.append("Not enough servers to list (need %s)." % MIN_SERVER_COUNT)
       listed = False
 
+    if excess_listings:
+      notes.append("You have already submitted a listed entry within %s" % MIN_LISTING_DELTA)
+      listed = False
+    else:
+      listed = True
+
     submission = models.Submission()
-    submission.dupe_check_id = int(dupe_check_id)
+    submission.client_id = client_id
+    submission.submit_id = submit_id
     submission.class_c = class_c
     # Hide from the main index. 
     hide_me = self.request.get('hidden', False)
@@ -175,17 +188,23 @@ class SubmitHandler(webapp.RequestHandler):
     # Dump configuration for later reference.
     config = models.SubmissionConfig(parent=submission)
     config.submission = submission
-    config.query_count = data['config']['query_count']
-    config.run_count = data['config']['run_count']
+    save_variables = [
+      'query_count',
+      'run_count',
+      'benchmark_thread_count',
+      'health_thread_count',
+      'health_timeout',
+      'timeout',
+      'input_source'
+    ]
+    for var in save_variables:
+      if data['config'].get(var) != None:
+        setattr(config, var, data['config'][var])
+
     config.os_system = data['config']['platform'][0]
     config.os_release = data['config']['platform'][1]
     config.python_version = '.'.join(map(str, data['config']['python']))
     config.namebench_version = data['config']['version']
-    config.benchmark_thread_count = data['config']['benchmark_thread_count']
-    config.health_thread_count = data['config']['health_thread_count']
-    config.health_timeout = data['config']['health_timeout']
-    config.timeout = data['config']['timeout']
-    config.input_source = data['config']['input_source']
     config.put()
     
     for nsdata in data['nameservers']:
@@ -194,42 +213,42 @@ class SubmitHandler(webapp.RequestHandler):
       ns_sub = models.SubmissionNameServer(parent=submission)
       ns_sub.submission = submission
       ns_sub.nameserver = ns_record
-      if nsdata.get('averages'):
-        ns_sub.averages = nsdata['averages']
-      if nsdata.get('overall_average'):
-        ns_sub.overall_average = nsdata['overall_average']
-      ns_sub.check_average = nsdata.get('check_average', 0.0)
-      if nsdata.get('min') != None:
-        ns_sub.duration_min = nsdata['min']
-      if nsdata.get('max') != None:
-        ns_sub.duration_max = nsdata['max']
-      if nsdata.get('failed') != None:
-        ns_sub.failed_count = nsdata['failed']
-      if nsdata.get('is_error_prone') != None:
-        ns_sub.is_error_prone = nsdata['is_error_prone']
-      if nsdata.get('is_reference') != None:
-        ns_sub.is_reference = nsdata['is_reference']
-      if nsdata.get('is_disabled') != None:
-        ns_sub.is_disabled = nsdata['is_disabled']
-      if nsdata.get('nx') != None:
-        ns_sub.nx_count = nsdata['nx']
-      if nsdata.get('sys_position') != None:
-        ns_sub.sys_position = nsdata['sys_position']
-        if nsdata['sys_position'] == 0:
-          submission.primary_nameserver = ns_record
-      if nsdata.get('position') != None:
-        ns_sub.position = nsdata['position']
+      
+      save_variables = [
+        'averages',
+        'check_average',
+        'error_count',
+        'is_disabled',
+        'is_error_prone',
+        'is_reference',
+        'duration_max',
+        'duration_min',
+        'nx_count',
+        'overall_average',
+        'position',
+        'sys_position',
+        'diff',
+        'timeout_count'
+      ]
+      for var in save_variables:
+        if nsdata.get(var) != None:
+          if '_average' in var:
+            setattr(ns_sub, var, float(nsdata[var]))
+          else:
+            setattr(ns_sub, var, nsdata[var])
+        
+      if nsdata['sys_position'] == 0:
+        submission.primary_nameserver = ns_record
       if nsdata.get('notes'):
         # Only include the text information, not the URL.
         ns_sub.notes = [x['text'] for x in nsdata['notes']]
-      if nsdata.get('diff'):
-        ns_sub.improvement = nsdata['diff']
       ns_sub_instance = ns_sub.put()
 
+      # The fastest ns wins a special award.
       if ns_sub.position == 0:
         submission.best_nameserver = ns_record
-        if not ns_sub.sys_position == 0 and ns_sub.improvement:
-          submission.best_improvement = ns_sub.improvement
+        if not ns_sub.sys_position == 0 and ns_sub.diff:
+          submission.best_improvement = ns_sub.diff
 
       if nsdata.get('durations'):
         for idx, run in enumerate(nsdata['durations']):

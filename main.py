@@ -40,8 +40,13 @@ class MainHandler(webapp.RequestHandler):
 #    query.filter('listed =', True)
     query.order('-timestamp')
     recent_submissions = query.fetch(10)
+    ages = []
+    for sub in recent_submissions:
+      sub.age = datetime.datetime.now() - sub.timestamp
+    
     template_values = {
-      'recent_submissions': recent_submissions
+      'recent_submissions': recent_submissions,
+      'ages': ages
     }  
     path = os.path.join(os.path.dirname(__file__), 'templates', 'index.html')
     self.response.out.write(template.render(path, template_values))

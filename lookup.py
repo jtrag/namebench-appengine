@@ -49,13 +49,13 @@ class LookupHandler(webapp.RequestHandler):
         recommended.append(record)
         if len(recommended) == 3:
           break
-          
-#    return self.response.out.write("%s" % recommende)
 
     template_values = {
       'id': id,
       'index_data': [],     # DISABLED: self._CreateIndexData(nsdata)
       'nsdata': ns_summary,
+      'submission': submission,
+      'reference': reference,
       'best_nameserver': submission.best_nameserver,
       'best_improvement': submission.best_improvement,
       'config': self._GetConfigTuples(submission),
@@ -84,12 +84,14 @@ class LookupHandler(webapp.RequestHandler):
     return models.SubmissionNameServer.all().filter("submission =", submission)
 
   def _CreateMeanDurationUrl(self, nsdata):
-    runs_data = [(x.nameserver.name, x.averages) for x in nsdata]
+    runs_data = [(x.nameserver.name, x.averages) for x in nsdata if not x.is_disabled]
+#    return runs_data
     return charts.PerRunDurationBarGraph(runs_data)
 
   def _CreateMinimumDurationUrl(self, nsdata):
-    fastest_data = [(x.nameserver, x.duration_min) for x in nsdata if not x.is_disabled]
-    return charts.MinimumDurationBarGraph(fastest_data)
+    fastest_nsdata = [x for x in sorted(nsdata, key=operator.attrgetter('duration_min')) if not x.is_disabled]
+    min_data = [(x.nameserver, x.duration_min) for x in fastest_nsdata]
+    return charts.MinimumDurationBarGraph(min_data)
 
   def _CreateDistributionUrl(self, nsdata, scale):
     runs_data = []
@@ -127,11 +129,13 @@ class LookupHandler(webapp.RequestHandler):
         'is_reference': ns_sub.is_reference,
         'sys_position': ns_sub.sys_position,
         'hostname': ns_sub.nameserver.hostname,
-        'diff': ns_sub.improvement,
+        'diff': ns_sub.diff,
+        'check_average': ns_sub.check_average,
         'overall_average': ns_sub.overall_average,
         'duration_min': ns_sub.duration_min,
         'duration_max': ns_sub.duration_max,
-        'failed_count': ns_sub.failed_count,
+        'error_count': ns_sub.error_count,
+        'timeout_count': ns_sub.timeout_count,
         'nx_count': ns_sub.nx_count,
         'notes': ns_sub.notes
       })
