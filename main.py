@@ -39,7 +39,7 @@ class MainHandler(webapp.RequestHandler):
     query = models.Submission.all()
 #    query.filter('listed =', True)
     query.order('-timestamp')
-    recent_submissions = query.fetch(10)
+    recent_submissions = query.fetch(15)
     ages = []
     for sub in recent_submissions:
       sub.age = datetime.datetime.now() - sub.timestamp
