@@ -31,27 +31,23 @@ import tasks
 
 # The minimum amount of time between submissions that we list
 MIN_LISTING_DELTA = datetime.timedelta(hours=8)
-
+MAPS_API_KEY = 'ABQIAAAAUgt_ZC0I2rXmTLwIzIUALxR_qblnQoD-DakP6eidTTtErCQTehR_m1HgdQwvNF2bjiq3H5qlCIV-jQ'
 
 class MainHandler(webapp.RequestHandler):
   """Handler for / requests"""
   def get(self):
     query = models.Submission.all()
-#    query.filter('listed =', True)
+    query.filter('listed =', True)
     query.order('-timestamp')
-    recent_submissions = query.fetch(15)
-    ages = []
-    for sub in recent_submissions:
-      sub.age = datetime.datetime.now() - sub.timestamp
-    
+    submissions = query.fetch(250)
     template_values = {
-      'recent_submissions': recent_submissions,
-      'ages': ages
+      'recent_submissions': submissions[0:15],
+      'submissions': submissions,
+      'maps_api_key': MAPS_API_KEY
     }  
     path = os.path.join(os.path.dirname(__file__), 'templates', 'index.html')
     self.response.out.write(template.render(path, template_values))
-    
-    
+      
 class IndexHostsHandler(webapp.RequestHandler):
     
   """Handler for /index_requests."""

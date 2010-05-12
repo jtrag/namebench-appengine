@@ -19,7 +19,7 @@ pre {
 }
 
 #content {
-  padding: 0 75px 0 75px;
+  padding: 0 75px 0 95px;
 }
 
 #left {
@@ -115,4 +115,7 @@ table#nstable {
 #container {
   width: 975px;
 }
+
+.mapwrapper {
+  margin-left: 20px;
 }
