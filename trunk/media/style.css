@@ -4,11 +4,18 @@ body {
 }
 
 a {
-  color: #666;
+  color: #ee6903;
 }
 
 #container {
   width: 900px;
+}
+
+pre {
+  color: #ffa933;
+  background-color: #000;
+  padding: 0.5em;
+  border: 2px solid #999;
 }
 
 #content {
@@ -17,6 +24,7 @@ a {
 
 #left {
   float: left;
+  background-image: url(/media/front-left.png);
   width: 65px;
 }
 
@@ -39,7 +47,7 @@ h1 {
 }
 
 h2 {
-  color: #000;
+  color: #999;
 }
 
 h3 {
@@ -49,6 +57,7 @@ h3 {
 
 #nsdetails {
   display: block;
+  color: #000;
   background-color:  #ff6903;
   border-radius: .5em;
   -moz-border-radius: .5em;
@@ -56,7 +65,7 @@ h3 {
   padding-left:  3px;
   padding-bottom: 3px;
   padding-right:  3px;
-  margin-left: 0.25em;
+  margin-left: 0.5em;
 }
 
 table#nstable {
@@ -65,6 +74,9 @@ table#nstable {
   font-size: small;
 }
 
+#nstable thead {
+  font-weight: bold;
+}
 #nstable tr {
   vertical-align:  top;
 }
@@ -98,4 +110,9 @@ table#nstable {
   color: #666;
   text-align: center;
   font-size: x-small;
+}
+
+#container {
+  width: 975px;
+}
 }

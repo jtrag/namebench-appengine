@@ -26,18 +26,18 @@
 <div id="container">
 <div class="version">namebench {{ version }}</div>
 <div id="big_summary" class="greybox">
-{% ifequal best_nameserver submission.primary_nameserver %}
+{% ifequal best_nameserver.ip submission.primary_nameserver.ip %}
   Your primary DNS server
   <h4><strong>{{ best_nameserver.ip|escape }}</strong></h4>
   Is already the fastest.
 {% else %}
 	<h4><strong>{{ best_nameserver.name|escape }}</strong> is</h4>
 	{% if best_improvement %}
-  	<h1>{{ best_improvement|floatformat }}%</h1><h5 class="faster">faster than</h5>
+  	<h1>{{ best_improvement|floatformat }}%</h1><h5 class="faster">Faster</h5>
   {% else %}
-    <h1>N/A<h1><h5 class="flaster">compared to</h5>
+    <h1>N/A<h1>
   {% endif %}
-	<h4>your current primary DNS server</h4>
+  <h4>than {% ifequal reference.sys_position 0 %}your current primary DNS server{% else %}{{ reference.name }}{% endifequal %}</h4>
 {% endifequal %}
 </div>
 
@@ -64,11 +64,11 @@
   <td nowrap="nowrap">IP</td>
   <td>Descr.</td>
   <td nowrap="nowrap">Hostname</td>
-  <td nowrap="nowrap">Diff</td>
   <td nowrap="nowrap">Avg (ms)</td>
+  <td nowrap="nowrap">Diff</td>
 	<td nowrap="nowrap">Min</td>
 	<td nowrap="nowrap">Max</td>
-  <td nowrap="nowrap">Err</td>
+  <td nowrap="nowrap">TmOut</td>
   <td nowrap="nowrap">NoAns</td>
   <td>Notes</td>
 </tr>
@@ -79,12 +79,12 @@
   <td>{{ sub.ip|escape }}</td>
   <td>{{ sub.name|escape }}</td>
   <td>{{ sub.hostname|escape }}</td>
-  <td>{% if sub.improvement %}{{ sub.improvement|floatformat }}%{% endif %}</td>  
-  <td>{% if sub.overall_average %}{{ sub.overall_average|floatformat }}{% endif %}</td>
+  <td>{% if sub.overall_average %}{{ sub.overall_average|floatformat }}{% else %}(~{{ sub.check_average|floatformat }}){% endif %}</td>
+  <td>{% if sub.diff %}{{ sub.diff|floatformat }}%{% endif %}</td>  
   <td>{% if sub.duration_min %}{{ sub.duration_min|floatformat }}{% endif %}</td>
   <td>{% if sub.duration_max %}{{ sub.duration_max|floatformat }}{% endif %}</td>
-  <td {% if sub.failed_count %}class="error_count"{% endif %}>{{ sub.failed_count }}</td>
-  <td>{% if sub.nx_count %}{{ sub.nx_count }}{% endif %}</td>
+  <td {% if sub.timeout_count %}class="error_count"{% endif %}>{{ sub.timeout_count }}</td>
+  <td>{% ifnotequal sub.nx_count None %}{{ sub.nx_count }}{% endifnotequal %}</td>
   <td>
   {% if sub.notes %}
     <ul class="warnings">
@@ -99,6 +99,12 @@
 
 <h2>Graphs</h2>
 
+<ul>
+  {% for row in fastest_data %}
+  {{ row }}
+  {% endfor %}
+</ul>
+
 <div id="graphs" class="section">
 <h2>Mean Response Duration</h2>
 <img src="{{ mean_duration_url }}" alt="Mean Duration Graph" />
@@ -112,7 +118,7 @@
 
 <h2>Index Results</h2>
 
-<small>Temporarily disabled due to poor performance.</small>
+<small>Temporarily disabled while we work out the performance issues.</small>
 <div id="index_table"></div>
 
 <h2>Config</h2>

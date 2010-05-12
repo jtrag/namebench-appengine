@@ -40,7 +40,8 @@ class NameServer(db.Model):
   
 
 class Submission(db.Model):
-  dupe_check_id = db.IntegerProperty()
+  client_id = db.IntegerProperty()
+  submit_id = db.IntegerProperty()
   class_c = db.StringProperty()
   timestamp = db.DateTimeProperty(auto_now_add=True)
   listed = db.BooleanProperty()
@@ -76,14 +77,20 @@ class SubmissionNameServer(db.Model):
   is_disabled = db.BooleanProperty()
   is_reference = db.BooleanProperty()
   overall_average = db.FloatProperty()
+  check_average = db.FloatProperty()
   averages = db.ListProperty(float)
   duration_min = db.FloatProperty()
   duration_max = db.FloatProperty()
+  error_count = db.IntegerProperty()
+  # TODO(tstromberg): Remove obsoleted failed_count variable
   failed_count = db.IntegerProperty()
+  timeout_count = db.IntegerProperty()
   nx_count = db.IntegerProperty()
   position = db.IntegerProperty()
   sys_position = db.IntegerProperty()
+  # TODO(tstromberg): Remove obsoleted improvement variable
   improvement = db.FloatProperty()
+  diff = db.FloatProperty()
   notes = db.ListProperty(str)
 
 # Store one row per run for run_results, since we do not need to do much with them.
