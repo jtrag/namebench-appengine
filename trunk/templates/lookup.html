@@ -7,15 +7,26 @@
   <script type='text/javascript' src='http://www.google.com/jsapi'></script>
   <script type='text/javascript'>
     google.load('visualization', '1', {packages:['table']});
-    google.setOnLoadCallback(drawIndexTable);
-    function drawIndexTable() {
+    google.setOnLoadCallback(drawGoogIndexTable);
+    google.setOnLoadCallback(drawWikiIndexTable);
+    function drawGoogIndexTable() {
       var data = new google.visualization.DataTable();
       data.addColumn('string', 'Nameserver');
-      data.addColumn('number', 'Duration');
+      data.addColumn('number', 'Time');
       data.addColumn('number', 'TTL');
       data.addColumn('string', 'Response');
-      data.addRows([{{ index_data }}]);
-      var table = new google.visualization.Table(document.getElementById('index_table'));
+      data.addRows([{{ goog_index_data }}]);
+      var table = new google.visualization.Table(document.getElementById('goog_index_table'));
+      table.draw(data, {allowHtml: true});
+    }
+    function drawWikiIndexTable() {
+      var data = new google.visualization.DataTable();
+      data.addColumn('string', 'Nameserver');
+      data.addColumn('number', 'Time');
+      data.addColumn('number', 'TTL');
+      data.addColumn('string', 'Response');
+      data.addRows([{{ wiki_index_data }}]);
+      var table = new google.visualization.Table(document.getElementById('wiki_index_table'));
       table.draw(data, {allowHtml: true});
     }
   </script> 
@@ -63,12 +74,12 @@
   <td nowrap="nowrap">IP</td>
   <td>Descr.</td>
   <td nowrap="nowrap">Hostname</td>
-  <td nowrap="nowrap">Avg (ms)</td>
+  <td nowrap="nowrap">Avg</td>
   <td nowrap="nowrap">Diff</td>
 	<td nowrap="nowrap">Min</td>
 	<td nowrap="nowrap">Max</td>
-  <td nowrap="nowrap">TmOut</td>
-  <td nowrap="nowrap">NoAns</td>
+  <td nowrap="nowrap">TmO</td>
+  <td nowrap="nowrap">NX</td>
   <td>Notes</td>
 </tr>
 </thead>
@@ -78,7 +89,7 @@
   <td>{{ sub.ip|escape }}</td>
   <td>{{ sub.name|escape }}</td>
   <td>{{ sub.hostname|escape }}</td>
-  <td>{% if sub.overall_average %}{{ sub.overall_average|floatformat }}{% else %}(~{{ sub.check_average|floatformat }}){% endif %}</td>
+  <td>{% if sub.overall_average %}{{ sub.overall_average|floatformat }}{% else %}~{{ sub.check_average|floatformat }}{% endif %}</td>
   <td>{% if sub.diff %}{{ sub.diff|floatformat }}%{% endif %}</td>  
   <td>{% if sub.duration_min %}{{ sub.duration_min|floatformat }}{% endif %}</td>
   <td>{% if sub.duration_max %}{{ sub.duration_max|floatformat }}{% endif %}</td>
@@ -117,7 +128,11 @@
 
 <h2>Sample Index Results (www.wikipedia.org)</h2>
 
-<div id="index_table"></div>
+<div id="wiki_index_table"></div>
+
+<h2>Sample Index Results (www.google.com)</h2>
+
+<div id="goog_index_table"></div>
 
 <h2>Config</h2>
 

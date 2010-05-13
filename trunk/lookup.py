@@ -65,7 +65,8 @@ class LookupHandler(webapp.RequestHandler):
       'nsdata': self._CreateNameServerTable(nsdata, key="table-%s" % id),
       'mean_duration_url': self._CreateMeanDurationUrl(nsdata, key="mean-%s" % id),
       'min_duration_url': self._CreateMinimumDurationUrl(nsdata, key="min-%s" % id),
-      'index_data': self._CreateIndexData(nsdata, 'A/www.wikipedia.org.'),
+      'goog_index_data': self._CreateIndexData(nsdata, 'A/www.google.com.'),
+      'wiki_index_data': self._CreateIndexData(nsdata, 'A/www.wikipedia.org.'),
       'distribution_url_200': self._CreateDistributionUrl(nsdata, 200, key="dist-%s" % id),
 #      'distribution_url': self._CreateDistributionUrl(nsdata, 3000),
       'recommended': recommended,
@@ -146,7 +147,7 @@ class LookupHandler(webapp.RequestHandler):
     return host_record
 
   def _CreateIndexData(self, nsdata, record, key=None):
-    key = "%s:%s" % (key, record)
+    key = "%s:%s-2" % (key, record)
     host_record = memcache.get(key)
     if host_record != None:
       return host_record
@@ -160,7 +161,7 @@ class LookupHandler(webapp.RequestHandler):
       if not name:
         name = ns.nameserver.ip
       for result in ns.index_results.filter('index_host =', host_record):
-        data.append("['%s',%0.3f,%i,'%s']," % (name, result.duration, result.ttl, result.response))
+        data.append("['%s',%0.1f,%i,'%s']," % (name, result.duration, result.ttl, result.response))
     data = ''.join(data)
     memcache.set(key, data, 86400)
     return data
