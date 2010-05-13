@@ -172,14 +172,8 @@ class SubmitHandler(webapp.RequestHandler):
     submission.listed = listed
 
     if 'geodata' in data and data['geodata']:
-      # Google JSAPI style data
       if 'latitude' in data['geodata']:
         submission.coordinates = ','.join((str(data['geodata']['latitude']), str(data['geodata']['longitude'])))
-      if 'address' in data['geodata']:
-        submission.city = data['geodata']['address'].get('city', None)
-        submission.region = data['geodata']['address'].get('region', None)
-        submission.country = data['geodata']['address'].get('country', None)    
-      else:
         submission.city = data['geodata'].get('city', None)
         submission.region = data['geodata'].get('region_name', None)
         submission.country = data['geodata'].get('country_name', None)    
