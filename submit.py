@@ -159,8 +159,6 @@ class SubmitHandler(webapp.RequestHandler):
     if excess_listings:
       notes.append("You have already submitted a listed entry within %s" % MIN_LISTING_DELTA)
       listed = False
-    else:
-      listed = True
 
     submission = models.Submission()
     submission.client_id = client_id
