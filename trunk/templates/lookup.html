@@ -11,7 +11,6 @@
     function drawIndexTable() {
       var data = new google.visualization.DataTable();
       data.addColumn('string', 'Nameserver');
-      data.addColumn('string', 'Record');
       data.addColumn('number', 'Duration');
       data.addColumn('number', 'TTL');
       data.addColumn('string', 'Response');
@@ -116,9 +115,8 @@
 
 <img src="{{ distribution_url_200 }}" alt="Response Distribution Graph (first 200ms)" />
 
-<h2>Index Results</h2>
+<h2>Sample Index Results (www.wikipedia.org)</h2>
 
-<small>Temporarily disabled while we work out the performance issues.</small>
 <div id="index_table"></div>
 
 <h2>Config</h2>
