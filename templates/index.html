@@ -11,7 +11,7 @@
         if (GBrowserIsCompatible()) {
           var map = new GMap2(document.getElementById("map_canvas"));
           map.setCenter(new GLatLng(30, 0), 1);
-          {% for submission in recent_submissions %}
+          {% for submission in submissions %}
           map.addOverlay(new GMarker(new GLatLng({{ submission.coordinates }})));{% endfor %}
         }
       }

@@ -16,9 +16,12 @@
 #
 import cgi
 import datetime
+import logging
 import operator
 import os
+
 from google.appengine.ext import db
+from google.appengine.api import memcache
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp import util
@@ -32,8 +35,8 @@ class LookupHandler(webapp.RequestHandler):
 
   def get(self, id):
     submission = models.Submission.get_by_id(int(id))
-    nsdata = models.SubmissionNameServer.all().filter("submission =", submission)
-    ns_summary = self._CreateNameServerTable(nsdata)
+    nsdata = self.get_cached_nsdata(submission, key="ns-%s" % id)
+    ns_summary = self._CreateNameServerTable(nsdata, key="ns_sum-%s" % id)
     if not ns_summary:
       return self.response.out.write("Bummer. ID#%s (%s) has no data." % (id, submission.timestamp))
       
@@ -59,16 +62,26 @@ class LookupHandler(webapp.RequestHandler):
       'best_nameserver': submission.best_nameserver,
       'best_improvement': submission.best_improvement,
       'config': self._GetConfigTuples(submission),
-      'nsdata': self._CreateNameServerTable(nsdata),
-      'mean_duration_url': self._CreateMeanDurationUrl(nsdata),
-      'min_duration_url': self._CreateMinimumDurationUrl(nsdata),
-      'distribution_url_200': self._CreateDistributionUrl(nsdata, 200),
+      'nsdata': self._CreateNameServerTable(nsdata, key="table-%s" % id),
+      'mean_duration_url': self._CreateMeanDurationUrl(nsdata, key="mean-%s" % id),
+      'min_duration_url': self._CreateMinimumDurationUrl(nsdata, key="min-%s" % id),
+      'index_data': self._CreateIndexData(nsdata, 'A/www.wikipedia.org.'),
+      'distribution_url_200': self._CreateDistributionUrl(nsdata, 200, key="dist-%s" % id),
 #      'distribution_url': self._CreateDistributionUrl(nsdata, 3000),
       'recommended': recommended,
     }
     path = os.path.join(os.path.dirname(__file__), 'templates', 'lookup.html')
     self.response.out.write(template.render(path, template_values))    
   
+  def get_cached_nsdata(self, submission, key=None):
+    # TODO(tstromberg): Add a memcache wrapper that handles the key flag
+    nsdata = memcache.get(key)
+    if nsdata != None:
+      return nsdata
+    nsdata = models.SubmissionNameServer.all().filter("submission =", submission)
+    memcache.add(key, nsdata, 86400)
+    return nsdata
+
   def _GetConfigTuples(self, submission):
     # configuration is only one row, so the for loop is kind of silly here.
     hide_keys = ['submission']
@@ -83,43 +96,80 @@ class LookupHandler(webapp.RequestHandler):
   def _GetSubmissionNameServers(self, submission):
     return models.SubmissionNameServer.all().filter("submission =", submission)
 
-  def _CreateMeanDurationUrl(self, nsdata):
+  def _CreateMeanDurationUrl(self, nsdata, key=None):
+    url = memcache.get(key)
+    if url != None:
+      return url    
+    
     runs_data = [(x.nameserver.name, x.averages) for x in nsdata if not x.is_disabled]
-#    return runs_data
-    return charts.PerRunDurationBarGraph(runs_data)
+    url = charts.PerRunDurationBarGraph(runs_data)
+    memcache.add(key, url, 86400)    
+    return url
 
-  def _CreateMinimumDurationUrl(self, nsdata):
+  def _CreateMinimumDurationUrl(self, nsdata, key=None):
+    url = memcache.get(key)
+    if url != None:
+      return url        
+    
     fastest_nsdata = [x for x in sorted(nsdata, key=operator.attrgetter('duration_min')) if not x.is_disabled]
     min_data = [(x.nameserver, x.duration_min) for x in fastest_nsdata]
-    return charts.MinimumDurationBarGraph(min_data)
+    url = charts.MinimumDurationBarGraph(min_data)
+    memcache.add(key, url, 86400)
+    return url
 
-  def _CreateDistributionUrl(self, nsdata, scale):
+  def _CreateDistributionUrl(self, nsdata, scale, key=None):
+    url = memcache.get(key)
+    if url != None:
+      return url
+
     runs_data = []
     for ns_sub in nsdata:
       results = []
       for run in ns_sub.results:
         results.extend(run.durations)
       runs_data.append((ns_sub.nameserver, results))
-    return charts.DistributionLineGraph(runs_data, scale=scale, sort_by=self._SortDistribution)
+    url = charts.DistributionLineGraph(runs_data, scale=scale, sort_by=self._SortDistribution)
+    memcache.add(key, url, 86400)
+    return url
 
   def _SortDistribution(self, a, b):
     """Sort distribution graph by name (for now)."""
     return cmp(a[0].name, b[0].name)
-
-  def _CreateIndexData(self, nsdata):
-    data = []
-  
-    for ns_sub in nsdata:
-      for result in ns_sub.index_results:
-        name = ns_sub.nameserver.name
-        if not name:
-          name = ns_sub.nameserver.ip
-          
-        data.append("['%s','%s',%0.3f,%i,'%s']," % (name, result.index_host.record_name,
-                                                   result.duration, result.ttl, result.response))
-    return ''.join(data)
     
-  def _CreateNameServerTable(self, nsdata):
+  def get_index_record_by_name(self, record):
+    key="get_index:%s" % record
+    host_record = memcache.get(key)
+    if host_record != None:
+      return host_record
+    host_record = models.IndexHost.get_by_key_name(record)
+    memcache.set(key, host_record, 86400)
+    return host_record
+
+  def _CreateIndexData(self, nsdata, record, key=None):
+    key = "%s:%s" % (key, record)
+    host_record = memcache.get(key)
+    if host_record != None:
+      return host_record
+
+    data = []
+    logging.info("want record: %s" % record)
+    host_record = self.get_index_record_by_name(record)
+    logging.info("record=%s" % host_record)
+    for ns in nsdata:
+      name = ns.nameserver.name
+      if not name:
+        name = ns.nameserver.ip
+      for result in ns.index_results.filter('index_host =', host_record):
+        data.append("['%s',%0.3f,%i,'%s']," % (name, result.duration, result.ttl, result.response))
+    data = ''.join(data)
+    memcache.set(key, data, 86400)
+    return data
+    
+  def _CreateNameServerTable(self, nsdata, key=None):
+    table = memcache.get(key)
+    if table != None:
+      return table
+    
     table = []
     for ns_sub in nsdata:
       table.append({
@@ -139,4 +189,6 @@ class LookupHandler(webapp.RequestHandler):
         'nx_count': ns_sub.nx_count,
         'notes': ns_sub.notes
       })
+    memcache.add(key, table, 14400)
     return table
+    

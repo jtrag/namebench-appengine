@@ -16,8 +16,11 @@
 #
 import cgi
 import datetime
+import logging
 import os
+
 from google.appengine.ext import db
+from google.appengine.api import memcache
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp import util
@@ -36,10 +39,7 @@ MAPS_API_KEY = 'ABQIAAAAUgt_ZC0I2rXmTLwIzIUALxR_qblnQoD-DakP6eidTTtErCQTehR_m1Hg
 class MainHandler(webapp.RequestHandler):
   """Handler for / requests"""
   def get(self):
-    query = models.Submission.all()
-    query.filter('listed =', True)
-    query.order('-timestamp')
-    submissions = query.fetch(250)
+    submissions = self.get_cached_submissions()
     template_values = {
       'recent_submissions': submissions[0:15],
       'submissions': submissions,
@@ -47,6 +47,19 @@ class MainHandler(webapp.RequestHandler):
     }  
     path = os.path.join(os.path.dirname(__file__), 'templates', 'index.html')
     self.response.out.write(template.render(path, template_values))
+    
+  def get_cached_submissions(self):
+    submissions = memcache.get("submissions")
+    if submissions is not None:
+      return submissions
+    
+    query = models.Submission.all()
+    query.filter('listed =', True)
+    query.order('-timestamp')
+    submissions = query.fetch(250)
+    if not memcache.add("submissions", submissions, 7200):
+      logging.error("Memcache set failed.")
+    return submissions    
       
 class IndexHostsHandler(webapp.RequestHandler):
     

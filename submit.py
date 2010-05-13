@@ -19,6 +19,7 @@ import datetime
 import os
 import re
 from google.appengine.ext import db
+from google.appengine.api import memcache
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp import util
@@ -97,10 +98,7 @@ class SubmitHandler(webapp.RequestHandler):
     data = simplejson.loads(self.request.get('data'))
     ip = self.request.remote_addr
     class_c = '.'.join(ip.split('.')[0:3])
-
-    cached_index_hosts = []
-    for record in db.GqlQuery("SELECT * FROM IndexHost WHERE listed=True"):
-      cached_index_hosts.append(record)
+    cached_index_hosts = self.get_cached_index_hosts()
     ns_map = self.insert_nameservers_from_data(data)
     excess_listings = self._duplicate_run_count(class_c, client_id, submit_id)
     # A special handler for the unlikely case of a duplicate submit_id. 
@@ -110,6 +108,18 @@ class SubmitHandler(webapp.RequestHandler):
     
     return db.run_in_transaction(self.insert_data, class_c, submit_id, client_id, data, ns_map,
                                  cached_index_hosts, excess_listings=excess_listings)
+
+  def get_cached_index_hosts(self):
+    index_hosts = memcache.get('index_hosts')
+    if index_hosts is not None:
+      return index_hosts
+    
+    index_hosts = []
+    for record in db.GqlQuery("SELECT * FROM IndexHost WHERE listed=True"):
+      index_hosts.append(record)
+    if not memcache.add("index_hosts", index_hosts, 14400):
+      logging.error("Memcache set failed.")
+    return index_hosts
 
   def insert_nameservers_from_data(self, data):
     """Insert nameservers from data. Designed to run in another transaction.
@@ -260,6 +270,8 @@ class SubmitHandler(webapp.RequestHandler):
     submission.put()
     if listed:
       state = 'public'
+      # invalidate the data for the frontpage
+      memcache.delete('submissions')
     elif submission.hidden:
       state = 'hidden'
     else:
