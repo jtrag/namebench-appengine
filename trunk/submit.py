@@ -72,6 +72,7 @@ class SubmitHandler(webapp.RequestHandler):
   def _process_index_submission(self, index_results, submission, ns_sub, index_hosts):
     """Process the index submission for a particular host."""
 
+    result_list = []
     for host, req_type, duration, answer_count, ttl, response in index_results:
       results = None
 
@@ -84,11 +85,13 @@ class SubmitHandler(webapp.RequestHandler):
           results.answer_count = answer_count
           results.ttl = ttl
           results.response = response
-          results.put()
+          result_list.append(results)
           break
 
       if not results:
         print "Odd, %s did not match." % host
+    
+    db.put(result_list)
 
   def post(self):
     """Store the results from a submission. Rather long."""
@@ -230,6 +233,7 @@ class SubmitHandler(webapp.RequestHandler):
         'position',
         'sys_position',
         'diff',
+        'port_behavior',
         'timeout_count'
       ]
       for var in save_variables:
@@ -253,12 +257,14 @@ class SubmitHandler(webapp.RequestHandler):
           submission.best_improvement = ns_sub.diff
 
       if nsdata.get('durations'):
+        result_list = []
         for idx, run in enumerate(nsdata['durations']):
           run_results = models.RunResult(parent=submission)
           run_results.submission_nameserver = ns_sub
           run_results.run_number = idx
           run_results.durations = list(run)
-          run_results.put()
+          result_list.append(run_results)
+        db.put(result_list)
 
       if nsdata.get('index'):
         self._process_index_submission(nsdata['index'], submission, ns_sub_instance,
