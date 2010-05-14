@@ -31,6 +31,17 @@ indexes:
 
 - kind: Submission
   properties:
+  - name: country_code
+  - name: listed
+  - name: timestamp
+
+- kind: Submission
+  properties:
+  - name: country_code
+  - name: timestamp
+
+- kind: Submission
+  properties:
   - name: listed
   - name: timestamp
     direction: desc
