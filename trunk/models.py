@@ -29,8 +29,9 @@ class NameServer(db.Model):
   name = db.StringProperty()
   listed = db.BooleanProperty()
   city = db.StringProperty()
-  province = db.StringProperty()
+  region = db.StringProperty()
   country = db.StringProperty()
+  country_code = db.StringProperty()
   coordinates = db.GeoPtProperty()
   is_global = db.BooleanProperty()
   is_regional = db.BooleanProperty()
@@ -49,6 +50,7 @@ class Submission(db.Model):
   city = db.StringProperty()
   region = db.StringProperty()
   country = db.StringProperty()
+  country_code = db.StringProperty()
   coordinates = db.GeoPtProperty()
   
   # de-normalized data, also duplicated in RunResults (though much slower)
