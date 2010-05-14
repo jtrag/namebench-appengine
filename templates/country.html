@@ -1,0 +1,52 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>namebench results: {{ country }}</title>
+  <link href="/media/report.css" rel="stylesheet" type="text/css" />
+  <link href="/media/style.css" rel="stylesheet" type="text/css" />
+  
+  <script type='text/javascript' src='http://www.google.com/jsapi'></script>
+  <script type='text/javascript'>
+    google.load('visualization', '1', {packages:['table']});
+    google.setOnLoadCallback(drawIndexTable);
+    function drawIndexTable() {
+      var data = new google.visualization.DataTable();
+      data.addColumn('string', 'Name');
+      data.addColumn('string', 'Hostname');
+      data.addColumn('number', 'Submissions');
+      data.addColumn('number', 'Avg Latency');
+      data.addColumn('number', 'Avg Rank');
+      data.addRows([{% for row in nsdata %}
+        ['{{ row.name }}','{{ row.hostname }}', {{ row.count }}, {{ row.overall_average|floatformat }}, {{ row.overall_position|floatformat}}],{% endfor %}]);
+      var table = new google.visualization.Table(document.getElementById('ns_table'));
+      table.draw(data, {allowHtml: true});
+    }
+  </script>  
+  
+</head>
+<body id="site">
+
+<div id="container">
+  <h1>{{ country }} ({{ country_code }})</h1>
+  <small>Last updated {{ last_update }}</small>
+  
+  <h2>Popular Primary Nameservers</h2>
+  <table><tr><td>Name</td><td>Submissions</td></tr>
+  {% for row in popular_nameservers %}
+    <tr><td>{{ row.0 }}</td><td>{{ row.1 }}</td>
+  {% endfor %}
+  </table>
+  
+  <h2>Popular Tested Nameservers</h2>
+  <div id="ns_table"></div>
+    
+  <h2>Response Distribution Chart (First 200ms)</h2>
+
+  <img src="{{ distribution_url_200 }}" alt="Response Distribution Graph (first 200ms)" />
+    
+</div>
+</body>
+
+
+
+</html>
