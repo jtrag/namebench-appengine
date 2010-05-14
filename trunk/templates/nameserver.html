@@ -1,0 +1,51 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>namebench results: nameserver {{ ip }}</title>
+  <link href="/media/report.css" rel="stylesheet" type="text/css" />
+  <link href="/media/style.css" rel="stylesheet" type="text/css" />
+  
+  <script type='text/javascript' src='http://www.google.com/jsapi'></script>
+  <script type='text/javascript'>
+    google.load('visualization', '1', {packages:['table']});
+    google.setOnLoadCallback(drawIndexTable);
+    function drawIndexTable() {
+      var data = new google.visualization.DataTable();
+      data.addColumn('string', 'Network');
+      data.addColumn('number', 'Hosts');
+      data.addColumn('number', 'Tests');
+      data.addColumn('number', 'Average Placement');
+      data.addColumn('number', 'Avg Min. Latency');
+      data.addColumn('number', 'Average Latency');
+      data.addRows([{% for ns_sub in nsdata %}{% for index_result in ns_sub.index_results %}
+        ['{% if ns_sub.nameserver.name %}{{ ns_sub.nameserver.name|escape }}{% else %}{{ ns_sub.nameserver.ip|escape }}{% endif %}','{{ index_result.index_host.record_name|escape }}',{{ index_result.duration|floatformat:3 }},{{ index_result.ttl }},'{{ index_result.response|escape }}'],{% endfor %}{% endfor %}]);
+      var table = new google.visualization.Table(document.getElementById('index_table'));
+      table.draw(data, {allowHtml: true});
+    }
+  </script>  
+  
+</head>
+<body id="site">
+
+<div id="container">
+  {% if nameserver.ip %}
+  <h1>{{ nameserver.name }} ({{ ip }})</h1>
+  <small>First seen {{ nameserver.timestamp }}</small>
+  <h2>Global Average</h2>
+  <h2>Best Performing Networks</h2>
+  
+  {{ best_networks_table }}
+  
+  <h2>Worst Performing Networks</h2>
+  <h2>Most Popular Networks</h2>
+  {% else %}
+  <h1>{{ ip }} died in a fire.</h1>
+  {% endif %}
+  
+  
+</div>
+</body>
+
+
+
+</html>
