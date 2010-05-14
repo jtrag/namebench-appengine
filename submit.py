@@ -188,6 +188,7 @@ class SubmitHandler(webapp.RequestHandler):
         submission.city = data['geodata'].get('city', None)
         submission.region = data['geodata'].get('region_name', None)
         submission.country = data['geodata'].get('country_name', None)    
+        submission.country_code = data['geodata'].get('country_code', None)    
     submission.put()
     
     # Dump configuration for later reference.
