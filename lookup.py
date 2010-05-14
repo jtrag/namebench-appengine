@@ -36,7 +36,7 @@ class LookupHandler(webapp.RequestHandler):
   def get(self, id):
     submission = models.Submission.get_by_id(int(id))
     nsdata = self.get_cached_nsdata(submission, key="ns-%s" % id)
-    ns_summary = self._CreateNameServerTable(nsdata, key="ns_sum-%s" % id)
+    ns_summary = self._CreateNameServerTable(nsdata, key="ns_sum2-%s" % id)
     if not ns_summary:
       return self.response.out.write("Bummer. ID#%s (%s) has no data." % (id, submission.timestamp))
       
@@ -47,7 +47,7 @@ class LookupHandler(webapp.RequestHandler):
       if row['is_reference']:
         reference = row
     
-    for record in sorted(ns_summary, key=operator.itemgetter('duration_min')):
+    for record in sorted(ns_summary, key=operator.itemgetter('duration_min')):      
       if record['ip'] != recommended[0]['ip']:
         recommended.append(record)
         if len(recommended) == 3:
@@ -62,6 +62,7 @@ class LookupHandler(webapp.RequestHandler):
       'best_nameserver': submission.best_nameserver,
       'best_improvement': submission.best_improvement,
       'config': self._GetConfigTuples(submission),
+      'port_behavior_data': self._CreatePortBehaviorData(ns_summary, key="behavior-%s" % id),
       'nsdata': self._CreateNameServerTable(nsdata, key="table-%s" % id),
       'mean_duration_url': self._CreateMeanDurationUrl(nsdata, key="mean-%s" % id),
       'min_duration_url': self._CreateMinimumDurationUrl(nsdata, key="min-%s" % id),
@@ -146,6 +147,19 @@ class LookupHandler(webapp.RequestHandler):
     memcache.set(key, host_record, 86400)
     return host_record
 
+  def _CreatePortBehaviorData(self, nsdata, key=None):
+    host_record = memcache.get(key)
+    if host_record != None:
+      return host_record
+
+    data = []
+    for row in nsdata:
+      data.append("['%s','%s']," % (row['name'], row['port_behavior']))
+    data = ''.join(data)
+    memcache.set(key, data, 86400)
+    return data
+
+
   def _CreateIndexData(self, nsdata, record, key=None):
     key = "%s:%s-2" % (key, record)
     host_record = memcache.get(key)
@@ -165,7 +179,7 @@ class LookupHandler(webapp.RequestHandler):
     data = ''.join(data)
     memcache.set(key, data, 86400)
     return data
-    
+  
   def _CreateNameServerTable(self, nsdata, key=None):
     table = memcache.get(key)
     if table != None:
@@ -186,6 +200,7 @@ class LookupHandler(webapp.RequestHandler):
         'duration_min': ns_sub.duration_min,
         'duration_max': ns_sub.duration_max,
         'error_count': ns_sub.error_count,
+        'port_behavior': ns_sub.port_behavior,
         'timeout_count': ns_sub.timeout_count,
         'nx_count': ns_sub.nx_count,
         'notes': ns_sub.notes

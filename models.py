@@ -92,6 +92,7 @@ class SubmissionNameServer(db.Model):
   improvement = db.FloatProperty()
   diff = db.FloatProperty()
   notes = db.ListProperty(str)
+  port_behavior = db.StringProperty()
 
 # Store one row per run for run_results, since we do not need to do much with them.
 class RunResult(db.Model):
