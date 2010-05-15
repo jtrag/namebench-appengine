@@ -27,6 +27,7 @@ from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp import util
 
 from libnamebench import charts
+from libnamebench import url_map
 
 import models
 
@@ -181,7 +182,8 @@ class LookupHandler(webapp.RequestHandler):
     return data
   
   def _CreateNameServerTable(self, nsdata, key=None):
-    table = memcache.get(key)
+#    table = memcache.get(key)
+    table = None
     if table != None:
       return table
     
@@ -190,6 +192,8 @@ class LookupHandler(webapp.RequestHandler):
       table.append({
         'ip': ns_sub.nameserver.ip,
         'name': ns_sub.nameserver.name,
+        'version': ns_sub.version,
+        'node_id': ns_sub.node_id,
         'is_disabled': ns_sub.is_disabled,
         'is_reference': ns_sub.is_reference,
         'sys_position': ns_sub.sys_position,
@@ -203,7 +207,7 @@ class LookupHandler(webapp.RequestHandler):
         'port_behavior': ns_sub.port_behavior,
         'timeout_count': ns_sub.timeout_count,
         'nx_count': ns_sub.nx_count,
-        'notes': ns_sub.notes
+        'notes': url_map.CreateNoteUrlTuples(ns_sub.notes)
       })
     memcache.add(key, table, 14400)
     return table
