@@ -91,6 +91,8 @@ class SubmissionNameServer(db.Model):
   position = db.IntegerProperty()
   sys_position = db.IntegerProperty()
   # TODO(tstromberg): Remove obsoleted improvement variable
+  version = db.StringProperty()
+  node_id = db.StringProperty()
   improvement = db.FloatProperty()
   diff = db.FloatProperty()
   notes = db.ListProperty(str)
