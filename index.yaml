@@ -19,45 +19,13 @@ indexes:
 
 - kind: Submission
   properties:
-  - name: class_c
-  - name: client_id
-  - name: timestamp
-
-- kind: Submission
-  properties:
-  - name: class_c
-  - name: dupe_check_id
-  - name: timestamp
-
-- kind: Submission
-  properties:
   - name: country_code
   - name: listed
   - name: timestamp
-
-- kind: Submission
-  properties:
-  - name: country_code
-  - name: timestamp
+    direction: desc
 
 - kind: Submission
   properties:
   - name: listed
   - name: timestamp
     direction: desc
-
-- kind: SubmissionNameServer
-  properties:
-  - name: submission
-  - name: duration_min
-
-- kind: SubmissionNameServer
-  properties:
-  - name: submission
-  - name: overall_average
-
-- kind: SubmissionNameServer
-  properties:
-  - name: submission
-  - name: overall_average
-  - name: duration_min

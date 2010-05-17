@@ -2,8 +2,19 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
   <title>namebench results: {{ country }}</title>
-  <link href="/media/report.css" rel="stylesheet" type="text/css" />
   <link href="/media/style.css" rel="stylesheet" type="text/css" />
+
+    <script src="http://maps.google.com/maps?file=api&amp;v=2&amp;sensor=false&amp;key={{ maps_api_key }}" type="text/javascript" type="text/javascript"></script>
+        <script type="text/javascript">
+        function initialize() {
+          if (GBrowserIsCompatible()) {
+            var map = new GMap2(document.getElementById("map_canvas"));
+            map.setCenter(new GLatLng({{ submissions.0.coordinates }}), 3); 
+            {% for submission in submissions %}
+            map.addOverlay(new GMarker(new GLatLng({{ submission.coordinates }})));{% endfor %}
+          }
+        }
+        </script>
   
   <script type='text/javascript' src='http://www.google.com/jsapi'></script>
   <script type='text/javascript'>
@@ -17,32 +28,81 @@
       data.addColumn('number', 'Avg Latency');
       data.addColumn('number', 'Avg Rank');
       data.addRows([{% for row in nsdata %}
-        ['{{ row.name }}','{{ row.hostname }}', {{ row.count }}, {{ row.overall_average|floatformat }}, {{ row.overall_position|floatformat}}],{% endfor %}]);
+        {% ifnotequal row.overall_position -1 %}{% ifnotequal row.count 1 %}['{{ row.name }}','{{ row.hostname }}', {{ row.count }}, {{ row.overall_average|floatformat }}, {{ row.overall_position|floatformat}}],{% endifnotequal %}{% endifnotequal %}{% endfor %}]);
       var table = new google.visualization.Table(document.getElementById('ns_table'));
       table.draw(data, {allowHtml: true});
     }
   </script>  
   
 </head>
-<body id="site">
+<body onload="initialize()" onunload="GUnload()" id="site">
 
 <div id="container">
   <h1>{{ country }} ({{ country_code }})</h1>
   <small>Last updated {{ last_update }}</small>
   
-  <h2>Popular Primary Nameservers</h2>
-  <table><tr><td>Name</td><td>Submissions</td></tr>
-  {% for row in popular_nameservers %}
-    <tr><td>{{ row.0 }}</td><td>{{ row.1 }}</td>
+  
+    <h2>Recent Submissions</h2>
+
+    <p>Results may be unlisted if there were other recent listed submissions from the same host, or if there was not enough data provided for a conclusive result.</p>
+    <div id="nsdetails">
+    <table id="nstable">
+      <thead>
+        <tr>
+          <td>ID</td>
+          <td>Location</td>
+          <td>Network</td>
+          <td>Best</td>
+          <td>Current</td>
+          <td>Improvement</td>
+          <td>Age</td>
+        </tr>
+      </thead>
+      <tbody>
+  {% for submission in recent_submissions %}
+  {% if not submission.hidden %}
+
+  <tr class="{% if not submission.listed %}disabled{% else %}normal {% cycle odd,even %}{% endif %}">
+    <td><a href="/id/{{ submission.key.id }}">{{ submission.key.id }}</a></td>
+    <td>{% if submission.region %}{{ submission.region|escape }},{% endif %} {% if submission.country %}<a href="/country/{{ submission.country_code|escape}}">{{ submission.country|escape }}</a>{% else %} Unknown {% endif %}</td>
+    <td>{{ submission.class_c|escape }}.0/24</td>
+    <td><a href="/ns/{{ submission.best_nameserver.ip|escape }}">{% if submission.best_nameserver.name %}{{ submission.best_nameserver.name|escape }}{% else %}{{ submission.best_nameserver.ip|escape }}{% endif %}</a></td>
+    <td><a href="/ns/{{ submission.primary_nameserver.ip|escape }}">{% if submission.primary_nameserver.name %}{{ submission.primary_nameserver.name|escape }}{% else %}{{ submission.primary_nameserver.ip|escape }}{% endif %}</a></td>
+    <td>{% if submission.best_improvement %}{{ submission.best_improvement|floatformat }}%{% else %}N/A{% endif %}</td>
+    <td>{{ submission.timestamp|timesince }}</td>
+  </tr>
+  {% endif %}
   {% endfor %}
+  </tbody>
   </table>
+  </div>
+
+  <h2>Submissions Map</h2>
+
+  <div class="mapwrapper"><div id="map_canvas" style="width: 500px; height: 300px"></div></div>  
   
   <h2>Popular Tested Nameservers</h2>
   <div id="ns_table"></div>
     
-  <h2>Response Distribution Chart (First 200ms)</h2>
+  <h2>Response Distribution Chart (First 350ms)</h2>
+<!-- 
+{{ nsdata_raw }}
+--!>
+  <img src="{{ distribution_url }}" alt="Response Distribution Graph (first 350ms)" />
 
-  <img src="{{ distribution_url_200 }}" alt="Response Distribution Graph (first 200ms)" />
+  <h2>Response Distribution Chart, Global Nameservers (First 350ms)</h2>
+
+  <img src="{{ distribution_url_global }}" alt="Response Distribution Graph for Golobal Nameservers (first 350ms)" />
+
+  <h2>Popular Primary Nameservers</h2>
+
+  <div class="config" class="section">
+  <table class="configtable"><thead><tr><td>Name</td><td>Submissions</td></tr></thead>
+    {% for row in popular_nameservers %}
+      <tr><td>{{ row.0 }}</td><td>{{ row.1 }}</td>
+    {% endfor %}
+    </table>
+
     
 </div>
 </body>
