@@ -97,7 +97,7 @@
 <tr class="{% if sub.is_disabled %}disabled{% else %}normal {% cycle odd,even %}{% endif %}{% ifequal sub.sys_position 0 %} primary_row{% endifequal %}{% if sub.is_error_prone %} unhealthy_host{% endif %}">
   <td><a href="http://www.google.com/search?q={{ sub.ip|escape}}" class="info">{{ sub.ip|escape }}{% if sub.version %}<span>{{ sub.version|escape }}</span>{% endif %}</td>
   <td>{{ sub.name|escape }}</td>
-  <td><a href="http://www.google.com/search?q={{ sub.hostname|escape}}" class="info">{{ sub.hostname|escape }}{% if sub.node_id %}<span>{{ sub.node_id|escape }}</span>{% endif %}</a></td>
+  <td><a href="http://www.google.com/search?q={{ sub.hostname|escape}}" class="info">{{ sub.hostname|escape }}{% if sub.node_ids %}<span>{% for node in sub.node_ids %}{{ node|escape }} {% endfor %}</span>{% endif %}</a></td>
   <td>{% if sub.overall_average %}{{ sub.overall_average|floatformat }}{% else %}~{{ sub.check_average|floatformat }}{% endif %}</td>
   <td>{% if sub.diff %}{{ sub.diff|floatformat }}%{% endif %}</td>  
   <td>{% if sub.duration_min %}{{ sub.duration_min|floatformat }}{% endif %}</td>

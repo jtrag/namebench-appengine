@@ -29,6 +29,8 @@ from libnamebench import charts
 
 import models
 
+MAPS_API_KEY = 'ABQIAAAAUgt_ZC0I2rXmTLwIzIUALxR_qblnQoD-DakP6eidTTtErCQTehR_m1HgdQwvNF2bjiq3H5qlCIV-jQ'
+
 
 def CalculateListAverage(values):
   """Computes the arithmetic mean of a list of numbers."""
@@ -61,6 +63,64 @@ class CountryHandler(webapp.RequestHandler):
   def get(self, country_code):
     ns_count = {}
     avg_latencies = {}
+
+    country = None
+    total = 0    
+    last_timestamp = None
+    submissions = self.get_cached_submissions(country_code)
+    for sub in submissions:
+      total += 1
+      if not country:
+        country = sub.country
+      if not last_timestamp:
+        last_timestamp = sub.timestamp    
+    ns_data = self.cached_nameserver_table(submissions, key=country_code)
+    runs_data = []
+    runs_data_global = []
+    ns_popular_list = sorted(ns_data.values(), key=lambda x:(x['count']), reverse=True)
+    for row in ns_popular_list:
+      if 'results' in row:
+        if row['ip'] != '__local__' and len(runs_data) < 10:
+          runs_data.append((row['ns'], row['results']))
+        if row['is_global']:
+          runs_data_global.append((row['ns'], row['results']))
+      if 'averages' in row:
+        row['overall_average'] = CalculateListAverage(row['averages'])
+      else:
+        row['overall_average'] = -1
+      if 'positions' in row:
+        row['overall_position'] = CalculateListAverage(row['positions'])
+      else:
+        row['overall_position'] = -1
+      
+    ns_count = {}  
+    template_values = {
+      'country_code': country_code,
+      'count': total,
+      'popular_nameservers': ns_count.items(),
+      'nsdata': ns_data.values(),
+      'nsdata_raw': ns_data,
+      'country': country,
+      'maps_api_key': MAPS_API_KEY,
+      'submissions': submissions,
+      'recent_submissions': submissions[0:15],
+      'distribution_url': self._CreateDistributionUrl(runs_data, scale=350, key="dist-%s" % country_code),
+      'distribution_url_global': self._CreateDistributionUrl(runs_data_global, scale=350, key="distglobal-%s" % country_code),
+      'last_update': last_timestamp
+    }
+    path = os.path.join(os.path.dirname(__file__), 'templates', 'country.html')
+    self.response.out.write(template.render(path, template_values))
+
+  def _SortDistribution(self, a, b):
+    """Sort distribution graph by name (for now)."""
+    return cmp(a[0].name, b[0].name)
+  
+  def cached_nameserver_table(self, submissions, key=None):
+    key = "nstable-%s" % key
+    ns_data = memcache.get(key)
+    if ns_data is not None:
+      return ns_data
+    
     ns_data = {
       '__local__': {
         'name': '(Fastest local nameserver)',
@@ -75,18 +135,7 @@ class CountryHandler(webapp.RequestHandler):
         'results': []
       }
     }
-    
-    country = None
-    total = 0
-    last_timestamp = None
-    submissions = self.get_cached_submissions(country_code)
     for sub in submissions:
-      if not country:
-        country = sub.country
-      if not last_timestamp:
-        last_timestamp = sub.timestamp
-      total += 1
-
       fastest_local = None
       for ns_sub in sub.nameservers:
         ip = "%s" % ns_sub.nameserver.ip
@@ -118,52 +167,11 @@ class CountryHandler(webapp.RequestHandler):
         for run in ns_sub.results:
           ns_data['__local__'].setdefault('results', []).extend(run.durations)
       
-      if sub.primary_nameserver:
-        if sub.primary_nameserver.name:
-          ns_name = sub.primary_nameserver.name
-        else:
-          ns_name = sub.primary_nameserver.ip
-      
-      ns_count[ns_name] = ns_count.setdefault(ns_name, 0) + 1
+    if not memcache.add(key, ns_data, 7200):
+      logging.error("Memcache set failed.")
+    return ns_data
 
-    runs_data = []
-    runs_data_global = []
-    ns_popular_list = sorted(ns_data.values(), key=lambda x:(x['count']), reverse=True)
-    for row in ns_popular_list:
-      if 'results' in row:
-        if row['ip'] != '__local__' and len(runs_data) < 10:
-          runs_data.append((row['ns'], row['results']))
-        if row['is_global']:
-          runs_data_global.append((row['ns'], row['results']))
-      if 'averages' in row:
-        row['overall_average'] = CalculateListAverage(row['averages'])
-      else:
-        row['overall_average'] = -1
-      if 'positions' in row:
-        row['overall_position'] = CalculateListAverage(row['positions'])
-      else:
-        row['overall_position'] = -1
   
-    template_values = {
-      'country_code': country_code,
-      'count': total,
-      'popular_nameservers': ns_count.items(),
-      'nsdata': ns_data.values(),
-      'nsdata_raw': ns_data,
-      'country': country,
-      'submissions': submissions,
-      'recent_submissions': submissions[0:15],
-      'distribution_url': charts.DistributionLineGraph(runs_data, scale=350, sort_by=self._SortDistribution),
-      'distribution_url_global': charts.DistributionLineGraph(runs_data_global, scale=350, sort_by=self._SortDistribution),
-      'last_update': last_timestamp
-    }
-    path = os.path.join(os.path.dirname(__file__), 'templates', 'country.html')
-    self.response.out.write(template.render(path, template_values))
-
-  def _SortDistribution(self, a, b):
-    """Sort distribution graph by name (for now)."""
-    return cmp(a[0].name, b[0].name)
-    
   def get_cached_submissions(self, country_code):
     key = "submissions-%s" % country_code
     submissions = memcache.get(key)
@@ -178,5 +186,14 @@ class CountryHandler(webapp.RequestHandler):
     if not memcache.add(key, submissions, 7200):
       logging.error("Memcache set failed.")
     return submissions
+      
+  def _CreateDistributionUrl(self, runs_data, scale, key=None):
+    url = memcache.get(key)
+    if url != None:
+      return url
+
+    url = charts.DistributionLineGraph(runs_data, scale=scale, sort_by=self._SortDistribution)
+    memcache.add(key, url, 86400)
+    return url
       
 

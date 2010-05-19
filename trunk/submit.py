@@ -223,7 +223,7 @@ class SubmitHandler(webapp.RequestHandler):
       save_variables = [
         'averages',
         'check_average',
-        'node_id',
+        'node_ids',
         'version',
         'error_count',
         'is_disabled',
