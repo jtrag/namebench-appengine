@@ -84,15 +84,13 @@ class SubmissionNameServer(db.Model):
   duration_min = db.FloatProperty()
   duration_max = db.FloatProperty()
   error_count = db.IntegerProperty()
-  # TODO(tstromberg): Remove obsoleted failed_count variable
-  failed_count = db.IntegerProperty()
   timeout_count = db.IntegerProperty()
   nx_count = db.IntegerProperty()
   position = db.IntegerProperty()
   sys_position = db.IntegerProperty()
-  # TODO(tstromberg): Remove obsoleted improvement variable
   version = db.StringProperty()
-  node_id = db.StringProperty()
+  node_ids = db.ListProperty(str)
+  # TODO(tstromberg): Remove obsoleted improvement variable
   improvement = db.FloatProperty()
   diff = db.FloatProperty()
   notes = db.ListProperty(str)

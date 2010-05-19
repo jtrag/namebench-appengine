@@ -193,7 +193,7 @@ class LookupHandler(webapp.RequestHandler):
         'ip': ns_sub.nameserver.ip,
         'name': ns_sub.nameserver.name,
         'version': ns_sub.version,
-        'node_id': ns_sub.node_id,
+        'node_ids': ns_sub.node_ids,
         'is_disabled': ns_sub.is_disabled,
         'is_reference': ns_sub.is_reference,
         'sys_position': ns_sub.sys_position,
