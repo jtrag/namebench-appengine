@@ -30,14 +30,6 @@
       var table = new google.visualization.Table(document.getElementById('wiki_index_table'));
       table.draw(data, {allowHtml: true});
     }
-    function drawPortBehaviorTable() {
-      var data = new google.visualization.DataTable();
-      data.addColumn('string', 'Nameserver');
-      data.addColumn('string', 'Port Behavior');
-      data.addRows([{{ port_behavior_data }}]);
-      var table = new google.visualization.Table(document.getElementById('port_behavior_table'));
-      table.draw(data, {allowHtml: true});
-    }
   </script> 
 </head>
 <body>
@@ -144,11 +136,6 @@
 <h2>Sample Index Results (www.google.com)</h2>
 
 <div id="goog_index_table"></div>
-
-
-<h2>Port Behavior (DNS-OARC)</h2>
-
-<div id="port_behavior_table"></div>
 
 <h2>Config</h2>
 
