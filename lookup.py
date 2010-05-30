@@ -54,6 +54,7 @@ class LookupHandler(webapp.RequestHandler):
         if len(recommended) == 3:
           break
 
+    version, config = self._GetConfigTuples(submission)
     template_values = {
       'id': id,
       'index_data': [],     # DISABLED: self._CreateIndexData(nsdata)
@@ -62,7 +63,8 @@ class LookupHandler(webapp.RequestHandler):
       'reference': reference,
       'best_nameserver': submission.best_nameserver,
       'best_improvement': submission.best_improvement,
-      'config': self._GetConfigTuples(submission),
+      'config': config,
+      'version': version,
       'port_behavior_data': self._CreatePortBehaviorData(ns_summary, key="behavior-%s" % id),
       'nsdata': self._CreateNameServerTable(nsdata, key="table-%s" % id),
       'mean_duration_url': self._CreateMeanDurationUrl(nsdata, key="mean-%s" % id),
@@ -90,11 +92,14 @@ class LookupHandler(webapp.RequestHandler):
     hide_keys = ['submission']
     
     show_config = []
+    version = None
     for configuration in submission.config:
       for key in sorted(models.SubmissionConfig.properties().keys()):
+        if key == 'version':
+          version = getattr(configuration, key)
         if key not in hide_keys:
           show_config.append((key, getattr(configuration, key)))
-    return show_config
+    return (version, show_config)
 
   def _GetSubmissionNameServers(self, submission):
     return models.SubmissionNameServer.all().filter("submission =", submission)
@@ -193,7 +198,7 @@ class LookupHandler(webapp.RequestHandler):
         'ip': ns_sub.nameserver.ip,
         'name': ns_sub.nameserver.name,
         'version': ns_sub.version,
-        'node_ids': ns_sub.node_ids,
+        'node_ids': [x for x in ns_sub.node_ids if x],
         'is_disabled': ns_sub.is_disabled,
         'is_reference': ns_sub.is_reference,
         'sys_position': ns_sub.sys_position,
