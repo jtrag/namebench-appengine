@@ -19,6 +19,7 @@ import datetime
 import operator
 import os
 import logging
+from django.utils import simplejson
 from google.appengine.api import memcache
 from google.appengine.ext import db
 from google.appengine.ext import webapp
@@ -52,6 +53,17 @@ class LookupHandler(webapp.RequestHandler):
     }
     path = os.path.join(os.path.dirname(__file__), 'templates', 'nameserver.html')
     self.response.out.write(template.render(path, template_values))
+
+class UnlistedServerHandler(webapp.RequestHandler):
+  """Handler for /unlisted_servers requests."""
+  
+  def get(self):
+    query = models.NameServer.all()
+    query.filter('listed =', False)
+    query.order('-timestamp')
+    for ns in query.fetch(1000):
+      if ns.ip in ns.name:
+        self.response.out.write('%s=%s' % (ns.ip, ns.name))
 
 class DummyNameserver(object):
   name = '(Fastest Local Nameserver)'
