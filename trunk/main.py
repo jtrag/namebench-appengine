@@ -79,6 +79,7 @@ def main():
       ('/ns/([\d\.:]+)', nameserver.LookupHandler),
       ('/country/(\w+)', nameserver.CountryHandler),
       ('/index_hosts', IndexHostsHandler),
+      ('/unlisted_servers', nameserver.UnlistedServerHandler),
       ('/tasks/clear_dupes', tasks.ClearDuplicateIdHandler),
       ('/tasks/load_index_hosts', tasks.ImportIndexHostsHandler),
       ('/submit', submit.SubmitHandler)

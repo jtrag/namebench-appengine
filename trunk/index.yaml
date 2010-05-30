@@ -10,6 +10,12 @@ indexes:
 # automatically uploaded to the admin console when you next deploy
 # your application using appcfg.py.
 
+- kind: NameServer
+  properties:
+  - name: listed
+  - name: timestamp
+    direction: desc
+
 - kind: Submission
   properties:
   - name: class_c

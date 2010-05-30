@@ -71,8 +71,7 @@ class LookupHandler(webapp.RequestHandler):
       'min_duration_url': self._CreateMinimumDurationUrl(nsdata, key="min-%s" % id),
       'goog_index_data': self._CreateIndexData(nsdata, 'A/www.google.com.', key=id),
       'wiki_index_data': self._CreateIndexData(nsdata, 'A/www.wikipedia.org.', key=id),
-      'distribution_url_200': self._CreateDistributionUrl(nsdata, 200, key="dist-%s" % id),
-#      'distribution_url': self._CreateDistributionUrl(nsdata, 3000),
+      'distribution_url_250': self._CreateDistributionUrl(nsdata, 250, key="dist250-%s" % id),
       'recommended': recommended,
     }
     path = os.path.join(os.path.dirname(__file__), 'templates', 'lookup.html')
