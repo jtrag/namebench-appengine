@@ -38,12 +38,12 @@ class ClearDuplicateIdHandler(webapp.RequestHandler):
 
   def get(self):
     check_ts = datetime.datetime.now() - MIN_LISTING_DELTA
-    cleared = 0
-    for record in db.GqlQuery("SELECT * FROM Submission WHERE timestamp < :1 AND dupe_check_id = NULL", check_ts):
+    cleared = []
+    for record in models.Submission.filter('timestamp < ', check_ts).filter('dupe_check_id != ', None): 
       record.dupe_check_id = None
-      cleared += 1
-      record.put()
-    self.response.out.write("%s submissions older than %s cleared." % (cleared, check_ts))
+      cleared.append(record)
+    db.put(cleared)
+    self.response.out.write("%s submissions older than %s cleared." % (len(cleared), check_ts))
 
 
 class ImportIndexHostsHandler(webapp.RequestHandler):
