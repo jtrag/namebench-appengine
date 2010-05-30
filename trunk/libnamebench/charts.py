@@ -21,14 +21,7 @@ import math
 import re
 import urllib
 
-
-# See if a third_party library exists -- use it if so.
-try:
-  import third_party
-except ImportError:
-  pass
-
-# external dependencies (from third_party)
+# external dependencies (from nb_third_party)
 from graphy import common
 from graphy.backends import google_chart_api
 
@@ -39,6 +32,7 @@ BASE_COLORS = ('ff9900', '1a00ff', 'ff00e6', '80ff00', '00e6ff', 'fae30a',
                '051290', 'f3e000', '9030f0', 'f03060', 'e0a030', '4598cd')
 CHART_WIDTH = 720
 CHART_HEIGHT = 415
+
 
 def DarkenHexColorCode(color, shade=1):
   """Given a color in hex format (for HTML), darken it X shades."""
@@ -119,6 +113,7 @@ def PerRunDurationBarGraph(run_data, scale=None):
   chart.bottom.max = labels[-1]
   return chart.display.Url(CHART_WIDTH, _BarGraphHeight(bar_count))
 
+
 def MinimumDurationBarGraph(fastest_data, scale=None):
   """Output a Google Chart API URL showing minimum-run durations."""
   chart = google_chart_api.BarChart()
@@ -161,6 +156,9 @@ def _MakeCumulativeDistribution(run_data, x_chunk=1.5, percent_chunk=3.5):
   # TODO(tstromberg): Use a more efficient algorithm. Pop values out each iter?
   dist = []
   for (ns, results) in run_data:
+    if not results:
+      continue
+    
     host_dist = [(0, 0)]
     max_result = max(results)
     chunk_max = min(results)
@@ -203,7 +201,7 @@ def _SortDistribution(a, b):
   sys_pos_cmp = cmp(b[0].system_position, a[0].system_position)
   if sys_pos_cmp:
     return sys_pos_cmp
-    
+
   preferred_cmp = cmp(b[0].is_preferred, a[0].is_preferred)
   if preferred_cmp:
     return preferred_cmp
@@ -226,7 +224,6 @@ def DistributionLineGraph(run_data, scale=None, sort_by=None):
   if not sort_by:
     sort_by = _SortDistribution
 
-
   max_value = _MaximumRunDuration(run_data)
   if not scale:
     scale = max_value
@@ -236,7 +233,10 @@ def DistributionLineGraph(run_data, scale=None, sort_by=None):
   scale = max_value / 100.0
 
   for (ns, xy_pairs) in sorted(distribution, cmp=sort_by):
-    labels.append(urllib.quote_plus(ns.name))
+    if len(ns.name) > 1:
+      labels.append(urllib.quote_plus(ns.name))
+    else:
+      labels.append(urllib.quote_plus(ns.ip))
     x = []
     y = []
     for (percentage, duration) in xy_pairs:
