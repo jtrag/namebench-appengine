@@ -67,10 +67,8 @@ class SubmissionConfig(db.Model):
   timeout = db.FloatProperty()
   query_count = db.IntegerProperty()
   run_count = db.IntegerProperty()
-  os_system = db.StringProperty()
-  os_release = db.StringProperty()
-  python_version = db.StringProperty()
-  namebench_version = db.StringProperty()
+  platform = db.StringProperty()
+  version = db.StringProperty()
   
 class SubmissionNameServer(db.Model):
   nameserver = db.ReferenceProperty(NameServer, collection_name='submissions')

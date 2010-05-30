@@ -196,21 +196,19 @@ class SubmitHandler(webapp.RequestHandler):
     config.submission = submission
     save_variables = [
       'query_count',
+      'platform',
       'run_count',
       'benchmark_thread_count',
       'health_thread_count',
       'health_timeout',
       'timeout',
+      'version',
       'input_source'
     ]
     for var in save_variables:
       if data['config'].get(var) != None:
         setattr(config, var, data['config'][var])
 
-    config.os_system = data['config']['platform'][0]
-    config.os_release = data['config']['platform'][1]
-    config.python_version = '.'.join(map(str, data['config']['python']))
-    config.namebench_version = data['config']['version']
     config.put()
     
     for nsdata in data['nameservers']:
