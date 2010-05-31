@@ -65,7 +65,7 @@
   <td><a href="/id/{{ submission.key.id }}">{{ submission.key.id }}</a></td>
   <td>{% if submission.region %}{{ submission.region|escape }},{% endif %} {% if submission.country %}<a href="/country/{{ submission.country_code|escape}}">{{ submission.country|escape }}</a>{% else %} Unknown {% endif %}</td>
   <td>{{ submission.class_c|escape }}.0/24</td>
-  <td><a href="/ns/{{ submission.best_nameserver.ip|escape }}">{% if submission.best_nameserver.name %}{{ submission.best_nameserver.name|escape }}{% else %}{{ submission.best_nameserver.ip|escape }}{% endif %}</a></td>
+  <td>{% if submission.best_nameserver.name %}{{ submission.best_nameserver.name|escape }}{% else %}{{ submission.best_nameserver.ip|escape }}{% endif %}</td>
   <td><a href="/ns/{{ submission.primary_nameserver.ip|escape }}">{% if submission.primary_nameserver.name %}{{ submission.primary_nameserver.name|escape }}{% else %}{{ submission.primary_nameserver.ip|escape }}{% endif %}</a></td>
   <td>{% if submission.best_improvement %}{{ submission.best_improvement|floatformat }}%{% else %}N/A{% endif %}</td>
   <td>{{ submission.timestamp|timesince }}</td>
