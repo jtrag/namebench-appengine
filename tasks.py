@@ -39,9 +39,11 @@ class ClearDuplicateIdHandler(webapp.RequestHandler):
   def get(self):
     check_ts = datetime.datetime.now() - MIN_LISTING_DELTA
     cleared = []
-    for record in models.Submission.filter('timestamp < ', check_ts).filter('dupe_check_id != ', None): 
-      record.dupe_check_id = None
-      cleared.append(record)
+    for record in models.Submission.all().filter('client_id != ', None): 
+      if record.timestamp < check_ts:
+        record.client_id = None
+        record.submit_id = None
+        cleared.append(record)
     db.put(cleared)
     self.response.out.write("%s submissions older than %s cleared." % (len(cleared), check_ts))
 
