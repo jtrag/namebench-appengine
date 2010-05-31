@@ -25,7 +25,7 @@ import sys
 base_path = "/usr/local/google_appengine"
 sys.path.append(base_path)
 sys.path.append('..')
-sys.path.append('../../namebench')
+sys.path.append('/Users/tstromberg/namebench')
 from libnamebench import nameserver
 from libnamebench import config
 from libnamebench import addr_util
@@ -66,7 +66,7 @@ listed_ips = []
 entities = models.NameServer.all().fetch(500)
 while entities:
   for entity in entities:
-    if entity.listed and entity.ip:
+    if entity.listed and entity.ip and '#' not in entity.name:
       listed_ips.append(entity.ip)
   entities = models.NameServer.all().filter('__key__ >', entities[-1].key()).fetch(500)
 

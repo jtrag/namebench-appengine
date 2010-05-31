@@ -62,8 +62,8 @@ class UnlistedServerHandler(webapp.RequestHandler):
     query.filter('listed =', False)
     query.order('-timestamp')
     for ns in query.fetch(1000):
-      if ns.ip in ns.name and 'x' not in ns.ip:
-        self.response.out.write('%s=%s\r\n' % (ns.ip, ns.name))
+      if ns.ip and 'x' not in ns.ip:
+        self.response.out.write('%s<br />\r\n' % (ns.ip))
 
 class DummyNameserver(object):
   name = '(Fastest Local Nameserver)'
