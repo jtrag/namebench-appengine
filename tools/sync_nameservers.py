@@ -26,6 +26,7 @@ base_path = "/usr/local/google_appengine"
 sys.path.append(base_path)
 sys.path.append('..')
 sys.path.append('/Users/tstromberg/namebench')
+sys.path.append('/Users/tstromberg/namebench-appengine')
 from libnamebench import nameserver
 from libnamebench import config
 from libnamebench import addr_util
@@ -37,6 +38,9 @@ sys.path.append(base_path + "/lib/django")
 from google.appengine.ext.remote_api import remote_api_stub
 from google.appengine.ext import db
 import models
+print models.__file__
+print dir(models)
+print dir(models.NameServer)
 
 def auth_func():
     return raw_input('Username:'), getpass.getpass('Password:')
@@ -60,15 +64,14 @@ for ip, name in regional_ns:
 remote_api_stub.ConfigureRemoteDatastore(app_id, '/remote_api', auth_func, host)
 geo_city = pygeoip.GeoIP('/usr/local/share/GeoLiteCity.dat')
 
-
 print "Gathering listed IPs"
 listed_ips = []
-entities = models.NameServer.all().fetch(500)
+entities = models.NameServer.all().fetch(100)
 while entities:
   for entity in entities:
-    if entity.listed and entity.ip and '#' not in entity.name:
+    if entity.listed and entity.ip and entity.hostname:
       listed_ips.append(entity.ip)
-  entities = models.NameServer.all().filter('__key__ >', entities[-1].key()).fetch(500)
+  entities = models.NameServer.all().filter('__key__ >', entities[-1].key()).fetch(250)
 
 print "%s previously listed ips found" % len(listed_ips)
 batch = []
