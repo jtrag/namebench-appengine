@@ -56,7 +56,7 @@ class MainHandler(webapp.RequestHandler):
     query = models.Submission.all()
     query.filter('listed =', True)
     query.order('-timestamp')
-    submissions = query.fetch(500)
+    submissions = query.fetch(250)
     if not memcache.add("submissions", submissions, 86400):
       logging.error("Memcache set failed.")
     return submissions    
