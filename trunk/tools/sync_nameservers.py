@@ -38,9 +38,6 @@ sys.path.append(base_path + "/lib/django")
 from google.appengine.ext.remote_api import remote_api_stub
 from google.appengine.ext import db
 import models
-print models.__file__
-print dir(models)
-print dir(models.NameServer)
 
 def auth_func():
     return raw_input('Username:'), getpass.getpass('Password:')
@@ -69,7 +66,7 @@ listed_ips = []
 entities = models.NameServer.all().fetch(100)
 while entities:
   for entity in entities:
-    if entity.listed and entity.ip and entity.hostname:
+    if entity.listed and entity.ip:
       listed_ips.append(entity.ip)
   entities = models.NameServer.all().filter('__key__ >', entities[-1].key()).fetch(250)
 
