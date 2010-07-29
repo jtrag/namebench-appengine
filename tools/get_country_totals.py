@@ -18,7 +18,10 @@
 """Get the total number of submissions per country."""
 
 import code
+import datetime
 import getpass
+import operator
+import re
 import pygeoip
 import sys
 
@@ -42,29 +45,96 @@ def auth_func():
 if len(sys.argv) < 2:
     print "Usage: %s app_id [host]" % (sys.argv[0],)
 app_id = sys.argv[1]
+host = '%s.appspot.com' % app_id
+
 if len(sys.argv) > 2:
-    host = sys.argv[2]
+  days = int(sys.argv[2])
 else:
-    host = '%s.appspot.com' % app_id
+  days = 7
 
 remote_api_stub.ConfigureRemoteDatastore(app_id, '/remote_api', auth_func, host)
-print "Gathering totals..."
-listed_ips = []
-entities = models.Submission.all().fetch(100)
-totals = {}
+since = datetime.datetime.now() - datetime.timedelta(days=days)
+print "Gathering totals since %s" % since
+country_total = {}
+best_ns_total = {}
+current_ns_total = {}
+source_total = {}
 grand_total = 0
-
+seen_subs = []
+seen_nets = []
+NS_CACHE = {}
+entities = models.Submission.all().filter('listed = ', True).filter('timestamp > ', since).order('-timestamp').fetch(25)
 while entities:
   for entity in entities:
+    if entity.class_c in seen_nets:
+      print "(ignoring submission, already seen %s)" % entity.class_c
+      continue
+    if entity.key() in seen_subs:
+      print "duplicate key: %s" % entity.key()
+      break
+      
+    print "%5s | %25s | %15s" % (grand_total, entity.country, entity.timestamp)
+    seen_subs.append(entity.key())
+    seen_nets.append(entity.class_c)
+    country_total[entity.country] = country_total.setdefault(entity.country, 0) + 1
+    current_ns_total[entity._primary_nameserver] = current_ns_total.setdefault(entity._primary_nameserver, 0) + 1
+    best_ns_total[entity._best_nameserver] = best_ns_total.setdefault(entity._best_nameserver, 0) + 1
     grand_total += 1
-    if entity.country in totals:
-      totals[entity.country] += 1
-    else:
-      totals[entity.country] = 1
-    
-  entities = models.Submission.all().filter('__key__ >', entities[-1].key()).fetch(250)
 
-print "-" * 72
-for key in totals:
-  print "%s\t%s" % (totals[key], key)
-print "TOTAL: %s" % grand_total
+  # bad assumption, may miss two submissions sent at the exact same time.    
+  entities = models.Submission.all().filter('timestamp <', entity.timestamp).filter('listed =', True).filter('timestamp > ', since).order('-timestamp').fetch(25)
+
+#entities = models.SubmissionConfig.all().fetch(25)
+#while entities:
+#  for entity in entities:
+#    if entity._submission in seen_subs:
+#      source_total[entity.input_source] = source_total.setdefault(entity.input_source, 0) + 1
+#    
+#  entities = models.SubmissionConfig.all().filter('__key__ >', entities[-1].key()).fetch(25)
+
+print "COUNTRY: %s" % grand_total
+print "-" * 70
+for key in country_total:
+  count = country_total[key]
+  print "%s\t%s (%.1f%%)" % (count, key, (count / float(grand_total)) * 100)
+
+#print "SOURCE: %s" % grand_total
+#print "-" * 70
+#for key in source_total:
+#  count = source_total[key]
+#  print "%s\t%s (%.1f%%)" % (count, key, (count / float(grand_total)) * 100)
+
+def _GetCachedNsName(key):
+  if key not in NS_CACHE:
+    try:
+      ns = models.NameServer.get(key)
+      NS_CACHE[key] = ns.name or ns.ip
+    except:
+      NS_CACHE[key] = 'ERR-%s' % key
+  return NS_CACHE[key]
+  
+def _ShowNameServersByCount(data, count=50):
+  top_by_name = {}
+  top_ns_items = sorted(data.items(), key=operator.itemgetter(1))
+  top_ns_items.reverse()
+  for key, count in top_ns_items[:count]:
+    name = _GetCachedNsName(key)
+    name = re.sub('-\d+$', '', name)
+    name = re.sub('-\d+ ', '', name)
+    name = re.sub(' \d+ ', '', name)
+    top_by_name[name] = top_by_name.setdefault(name, 0) + count
+
+  top_names = sorted(top_by_name.items(), key=operator.itemgetter(1))
+  top_names.reverse()
+  for name, count in top_names:
+    print "%s\t%s (%.1f%%)" % (count, name, (count / float(grand_total)) * 100)
+
+print
+print "BEST NS: %s" % grand_total
+print "-" * 70
+_ShowNameServersByCount(best_ns_total)
+
+print
+print "CURRENT NS: %s" % grand_total
+print "-" * 70
+_ShowNameServersByCount(current_ns_total)
