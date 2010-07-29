@@ -63,8 +63,9 @@ grand_total = 0
 seen_subs = []
 seen_nets = []
 NS_CACHE = {}
-entities = models.Submission.all().filter('listed = ', True).filter('timestamp > ', since).order('-timestamp').fetch(25)
+entities = models.Submission.all().filter('listed = ', True).filter('timestamp > ', since).order('-timestamp').fetch(100)
 while entities:
+  print len(entities)
   for entity in entities:
     if entity.class_c in seen_nets:
       print "(ignoring submission, already seen %s)" % entity.class_c
@@ -73,7 +74,6 @@ while entities:
       print "duplicate key: %s" % entity.key()
       break
       
-    print "%5s | %25s | %15s" % (grand_total, entity.country, entity.timestamp)
     seen_subs.append(entity.key())
     seen_nets.append(entity.class_c)
     country_total[entity.country] = country_total.setdefault(entity.country, 0) + 1
@@ -82,15 +82,15 @@ while entities:
     grand_total += 1
 
   # bad assumption, may miss two submissions sent at the exact same time.    
-  entities = models.Submission.all().filter('timestamp <', entity.timestamp).filter('listed =', True).filter('timestamp > ', since).order('-timestamp').fetch(25)
+  entities = models.Submission.all().filter('timestamp <', entity.timestamp).filter('listed =', True).filter('timestamp > ', since).order('-timestamp').fetch(100)
 
-#entities = models.SubmissionConfig.all().fetch(25)
+#entities = models.SubmissionConfig.all().fetch(100)
 #while entities:
 #  for entity in entities:
 #    if entity._submission in seen_subs:
 #      source_total[entity.input_source] = source_total.setdefault(entity.input_source, 0) + 1
 #    
-#  entities = models.SubmissionConfig.all().filter('__key__ >', entities[-1].key()).fetch(25)
+#  entities = models.SubmissionConfig.all().filter('__key__ >', entities[-1].key()).fetch(100)
 
 print "COUNTRY: %s" % grand_total
 print "-" * 70
@@ -113,15 +113,17 @@ def _GetCachedNsName(key):
       NS_CACHE[key] = 'ERR-%s' % key
   return NS_CACHE[key]
   
-def _ShowNameServersByCount(data, count=50):
+def _ShowNameServersByCount(data, count=150):
   top_by_name = {}
   top_ns_items = sorted(data.items(), key=operator.itemgetter(1))
   top_ns_items.reverse()
   for key, count in top_ns_items[:count]:
     name = _GetCachedNsName(key)
     name = re.sub('-\d+$', '', name)
-    name = re.sub('-\d+ ', '', name)
-    name = re.sub(' \d+ ', '', name)
+    name = re.sub('-\d+ ', ' ', name)
+    name = re.sub(' \d+ ', ' ', name)
+    if name.startswith('Internal') or name.endswith('.x'):
+      name = 'Internal IP'
     top_by_name[name] = top_by_name.setdefault(name, 0) + count
 
   top_names = sorted(top_by_name.items(), key=operator.itemgetter(1))
@@ -130,11 +132,11 @@ def _ShowNameServersByCount(data, count=50):
     print "%s\t%s (%.1f%%)" % (count, name, (count / float(grand_total)) * 100)
 
 print
-print "BEST NS: %s" % grand_total
+print "Best Top 150: %s" % grand_total
 print "-" * 70
 _ShowNameServersByCount(best_ns_total)
 
 print
-print "CURRENT NS: %s" % grand_total
+print "Current Top 150: %s" % grand_total
 print "-" * 70
 _ShowNameServersByCount(current_ns_total)
